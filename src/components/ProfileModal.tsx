@@ -123,7 +123,7 @@ function ProfileForm({
 
   return (
     <form onSubmit={handleSave} className="space-y-5">
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-center sm:text-left">
         <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-primary/40 bg-muted shadow-sm">
           {avatarDataUrl ? (
             <NextImage
@@ -149,7 +149,7 @@ function ProfileForm({
             onChange={handleFileChange}
             className="hidden"
           />
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
             <Button
               variant="outline"
               size="sm"
@@ -192,7 +192,7 @@ function ProfileForm({
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             placeholder="Reader"
-            className="h-10 w-full rounded-xl border border-border bg-background/80 pl-9 pr-3 text-sm text-foreground focus:border-primary focus:outline-none"
+            className="h-10 w-full rounded-xl border border-border bg-background/80 pl-9 pr-3 text-base text-foreground focus:border-primary focus:outline-none sm:text-sm"
           />
         </div>
       </div>
@@ -203,11 +203,16 @@ function ProfileForm({
         </p>
       ) : null}
 
-      <div className="flex items-center justify-end gap-2 pt-2">
-        <Button variant="ghost" onClick={onClose}>
+      <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:items-center sm:justify-end">
+        <Button variant="ghost" onClick={onClose} className="w-full sm:w-auto">
           Cancel
         </Button>
-        <Button type="submit" variant="primary" disabled={isSaving}>
+        <Button
+          type="submit"
+          variant="primary"
+          disabled={isSaving}
+          className="w-full sm:w-auto"
+        >
           {isSaving ? "Saving..." : "Save Profile"}
         </Button>
       </div>
@@ -228,14 +233,14 @@ export function ProfileModal() {
       role="dialog"
       aria-modal="true"
       aria-labelledby="profile-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-xs"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-3 backdrop-blur-xs sm:p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           setIsProfileOpen(false);
         }
       }}
     >
-      <div className="w-full max-w-md rounded-2xl border border-border bg-card-solid p-6 shadow-2xl animate-word-drop">
+      <div className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-2xl border border-border bg-card-solid p-4 shadow-2xl animate-word-drop sm:p-6">
         <div className="mb-5 flex items-center justify-between">
           <div>
             <h2

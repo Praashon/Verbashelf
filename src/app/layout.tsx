@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { RadialBackground } from "@/components/ui/light-theme-tailwind-css-background-snippet";
@@ -19,6 +19,16 @@ export const metadata: Metadata = {
   title: "VerbaShelf | Personal Vocabulary & Speaking Vault",
   description:
     "Your local-first, privacy-focused personal vocabulary vault, voice dictionary lookup, and zero-database word sharing companion.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+  ],
 };
 
 const themeInitScript = `
@@ -48,7 +58,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className="relative min-h-full flex flex-col bg-transparent text-foreground">
+      <body className="relative min-h-full flex flex-col overflow-x-clip bg-transparent text-foreground">
         <RadialBackground />
         <Providers>
           <Navbar />

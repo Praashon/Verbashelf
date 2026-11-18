@@ -40,10 +40,10 @@ export function TopicSelector({
         setIsOpen(false);
       }
     };
-    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("pointerdown", handleOutsideClick);
     document.addEventListener("keydown", handleEscape);
     return () => {
-      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("pointerdown", handleOutsideClick);
       document.removeEventListener("keydown", handleEscape);
     };
   }, [isOpen]);
@@ -79,7 +79,7 @@ export function TopicSelector({
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         className={cn(
-          "inline-flex cursor-pointer items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-medium shadow-xs backdrop-blur-md transition-all",
+          "inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-medium shadow-xs backdrop-blur-md transition-all",
           isOpen
             ? "border-primary bg-card-solid text-foreground ring-2 ring-primary/20"
             : "border-border/80 bg-card/85 text-foreground hover:border-primary/60 hover:bg-card-solid"
@@ -87,7 +87,7 @@ export function TopicSelector({
       >
         <FolderOpen className="h-3.5 w-3.5 text-primary" />
         <span className="text-muted-foreground">Topic:</span>
-        <span className="max-w-[140px] truncate font-semibold">
+        <span className="max-w-[160px] truncate font-semibold sm:max-w-[140px]">
           {activeTopic?.name ?? "General"}
         </span>
         {activeTopic?.id !== undefined ? (
@@ -104,7 +104,7 @@ export function TopicSelector({
       </button>
 
       {isOpen ? (
-        <div className="absolute left-0 z-50 mt-2 w-72 rounded-2xl border border-border bg-card-solid p-2 shadow-[0_22px_50px_-12px_rgba(15,20,25,0.28)] ring-1 ring-black/5 backdrop-blur-xl animate-word-drop dark:ring-white/10 dark:shadow-[0_24px_55px_-12px_rgba(0,0,0,0.9)]">
+        <div className="absolute left-1/2 z-50 mt-2 w-[min(18rem,calc(100vw-1.75rem))] -translate-x-1/2 rounded-2xl border border-border bg-card-solid p-2 shadow-[0_22px_50px_-12px_rgba(15,20,25,0.28)] ring-1 ring-black/5 backdrop-blur-xl animate-word-drop dark:ring-white/10 dark:shadow-[0_24px_55px_-12px_rgba(0,0,0,0.9)] sm:left-0 sm:w-72 sm:translate-x-0">
           <div className="mb-1.5 px-2.5 pt-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             Save lookups into topic
           </div>
@@ -166,12 +166,12 @@ export function TopicSelector({
               value={newTopicName}
               onChange={(e) => setNewTopicName(e.target.value)}
               placeholder="New topic (e.g. LotR)..."
-              className="h-8 flex-1 rounded-xl border border-border bg-background/80 px-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+              className="h-9 min-w-0 flex-1 rounded-xl border border-border bg-background/80 px-2.5 text-base text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none sm:h-8 sm:text-xs"
             />
             <button
               type="submit"
               disabled={!newTopicName.trim() || isCreating}
-              className="inline-flex h-8 cursor-pointer items-center gap-1 rounded-xl bg-primary px-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-9 shrink-0 cursor-pointer items-center gap-1 rounded-xl bg-primary px-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 sm:h-8"
             >
               <Plus className="h-3.5 w-3.5" />
               <span>Add</span>

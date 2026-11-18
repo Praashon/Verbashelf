@@ -6,7 +6,7 @@ interface BrandLogoProps {
 
 export function BrandLogo({ className }: BrandLogoProps) {
   return (
-    <span className={cn("inline-flex items-center gap-2.5 select-none", className)}>
+    <span className={cn("inline-flex items-center gap-2 select-none sm:gap-2.5", className)}>
       <svg
         width="28"
         height="28"
@@ -14,7 +14,7 @@ export function BrandLogo({ className }: BrandLogoProps) {
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden="true"
-        className="shrink-0"
+        className="h-6 w-6 shrink-0 sm:h-7 sm:w-7"
       >
         <rect
           x="2"
@@ -46,7 +46,7 @@ export function BrandLogo({ className }: BrandLogoProps) {
         />
       </svg>
 
-      <span className="text-[17px] tracking-tight leading-none">
+      <span className="text-[15px] tracking-tight leading-none sm:text-[17px]">
         <span className="font-bold text-foreground">Verba</span>
         <span className="font-medium text-primary">Shelf</span>
       </span>

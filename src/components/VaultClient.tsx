@@ -207,7 +207,7 @@ export function VaultClient() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 pb-20 pt-8 sm:px-6">
+    <div className="mx-auto w-full max-w-4xl px-3.5 pb-16 pt-6 sm:px-6 sm:pb-20 sm:pt-8">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
@@ -227,7 +227,7 @@ export function VaultClient() {
         <div
           role="tablist"
           aria-label="Vault view mode"
-          className="inline-flex flex-wrap self-start rounded-full border border-border bg-card/85 p-1 shadow-xs backdrop-blur-md"
+          className="grid w-full grid-cols-3 rounded-full border border-border bg-card/85 p-1 shadow-xs backdrop-blur-md sm:inline-flex sm:w-auto"
         >
           <button
             type="button"
@@ -235,7 +235,7 @@ export function VaultClient() {
             aria-selected={viewMode === "topics"}
             onClick={() => setViewMode("topics")}
             className={cn(
-              "inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all",
+              "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-semibold transition-all sm:px-3.5",
               viewMode === "topics"
                 ? "bg-primary text-white shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
@@ -250,7 +250,7 @@ export function VaultClient() {
             aria-selected={viewMode === "timeline"}
             onClick={() => setViewMode("timeline")}
             className={cn(
-              "inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all",
+              "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-semibold transition-all sm:px-3.5",
               viewMode === "timeline"
                 ? "bg-primary text-white shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
@@ -265,7 +265,7 @@ export function VaultClient() {
             aria-selected={viewMode === "trash"}
             onClick={() => setViewMode("trash")}
             className={cn(
-              "inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all",
+              "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-semibold transition-all sm:px-3.5",
               viewMode === "trash"
                 ? "bg-destructive text-white shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
@@ -302,7 +302,7 @@ export function VaultClient() {
                 : "Filter saved words, definitions, or topics..."
             }
             aria-label="Filter vault words"
-            className="h-9 w-full rounded-xl border border-border bg-background/80 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+            className="h-10 w-full rounded-xl border border-border bg-background/80 pl-9 pr-3 text-base text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none sm:h-9 sm:text-sm"
           />
         </div>
 
@@ -334,7 +334,7 @@ export function VaultClient() {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/80 bg-card/80 px-4 py-3 backdrop-blur-md">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/80 bg-card/80 px-3.5 py-3 backdrop-blur-md sm:px-4">
               <span className="text-xs font-medium text-muted-foreground">
                 Showing {filteredTrash.length} of {trashWords.length} deleted{" "}
                 {trashWords.length === 1 ? "word" : "words"}
@@ -391,12 +391,12 @@ export function VaultClient() {
                   return (
                     <article
                       key={item.id}
-                      className="rounded-2xl border border-border/80 bg-card/85 p-5 shadow-xs backdrop-blur-md"
+                      className="rounded-2xl border border-border/80 bg-card/85 p-4 shadow-xs backdrop-blur-md sm:p-5"
                     >
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="space-y-1">
-                          <div className="flex flex-wrap items-center gap-2.5">
-                            <h2 className="text-xl font-bold capitalize text-foreground">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0 space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h2 className="text-lg font-bold capitalize break-words [overflow-wrap:anywhere] text-foreground sm:text-xl">
                               {item.term}
                             </h2>
                             {item.phonetic ? (
@@ -415,7 +415,7 @@ export function VaultClient() {
                           </p>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <Button
                             variant="outline"
                             size="sm"
@@ -459,7 +459,7 @@ export function VaultClient() {
           </div>
         )
       ) : words.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-border bg-card/75 p-12 text-center backdrop-blur-md">
+        <div className="rounded-3xl border border-dashed border-border bg-card/75 p-10 text-center backdrop-blur-md sm:p-12">
           <Library className="mx-auto h-10 w-10 text-primary/70" />
           <h2 className="mt-4 text-lg font-bold text-foreground">
             Your Vault is waiting for your first word
@@ -491,25 +491,36 @@ export function VaultClient() {
           <div className="space-y-2">
             <form
               onSubmit={handleCreateTopic}
-              className="flex flex-wrap items-center gap-2"
+              className="flex items-center gap-2"
             >
               <input
                 type="text"
                 value={newTopicName}
                 onChange={(e) => setNewTopicName(e.target.value)}
-                placeholder="Create a new topic folder (e.g. Lord of the Rings)..."
-                className="h-9 min-w-[220px] flex-1 rounded-xl border border-border bg-card/85 px-3 text-sm text-foreground placeholder:text-muted-foreground backdrop-blur-md focus:border-primary focus:outline-none"
+                placeholder="Create a new topic folder (e.g. LotR)..."
+                className="h-10 min-w-0 flex-1 rounded-xl border border-border bg-card/85 px-3 text-base text-foreground placeholder:text-muted-foreground backdrop-blur-md focus:border-primary focus:outline-none sm:h-9 sm:text-sm"
               />
-              <Button type="submit" variant="primary" size="sm" className="h-9">
+              <Button
+                type="submit"
+                variant="primary"
+                size="sm"
+                className="h-10 shrink-0 sm:h-9"
+              >
                 <Plus className="h-4 w-4" />
                 <span>Add Topic</span>
               </Button>
             </form>
             {topics.length > 1 ? (
-              <p className="px-1 text-xs text-muted-foreground">
-                Tip: Drag any word card onto another topic folder to move it, or
-                use the folder menu on each card.
-              </p>
+              <>
+                <p className="hidden px-1 text-xs text-muted-foreground sm:block">
+                  Tip: Drag any word card onto another topic folder to move it, or
+                  use the folder menu on each card.
+                </p>
+                <p className="px-1 text-xs text-muted-foreground sm:hidden">
+                  Tip: Tap the folder button on any word card to move it to another
+                  topic.
+                </p>
+              </>
             ) : null}
           </div>
 
@@ -575,27 +586,27 @@ export function VaultClient() {
                     : "border-border/80 bg-card/75"
                 )}
               >
-                <div className="flex items-center justify-between gap-3 rounded-t-2xl px-4 py-3.5 sm:px-5">
+                <div className="flex items-center justify-between gap-3 rounded-t-2xl px-3.5 py-3 sm:px-5 sm:py-3.5">
                   <button
                     type="button"
                     onClick={() => toggleTopicCollapse(topic.id!)}
                     aria-expanded={!isCollapsed}
-                    className="flex flex-1 cursor-pointer items-center gap-2.5 text-left"
+                    className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left sm:gap-2.5"
                   >
                     {isCollapsed ? (
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                     ) : (
-                      <ChevronDown className="h-4 w-4 text-primary" />
+                      <ChevronDown className="h-4 w-4 shrink-0 text-primary" />
                     )}
-                    <FolderOpen className="h-4 w-4 text-primary" />
-                    <span className="text-base font-bold text-foreground">
+                    <FolderOpen className="h-4 w-4 shrink-0 text-primary" />
+                    <span className="truncate text-base font-bold text-foreground">
                       {topic.name}
                     </span>
-                    <span className="rounded-full bg-primary/12 px-2.5 py-0.5 text-xs font-semibold tabular-nums text-primary">
+                    <span className="shrink-0 rounded-full bg-primary/12 px-2.5 py-0.5 text-xs font-semibold tabular-nums text-primary">
                       {topicWords.length}
                     </span>
                     {isDropTarget ? (
-                      <span className="ml-2 rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-semibold text-white">
+                      <span className="ml-2 shrink-0 rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-semibold text-white">
                         Drop to move here
                       </span>
                     ) : null}
@@ -614,7 +625,7 @@ export function VaultClient() {
                       }}
                       title={`Delete topic "${topic.name}" (moves words to General)`}
                       aria-label={`Delete topic ${topic.name}`}
-                      className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                      className="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -622,7 +633,7 @@ export function VaultClient() {
                 </div>
 
                 {!isCollapsed ? (
-                  <div className="space-y-3 rounded-b-2xl border-t border-border/60 p-4 sm:p-5">
+                  <div className="space-y-3 rounded-b-2xl border-t border-border/60 p-3 sm:p-5">
                     {topicWords.length === 0 ? (
                       <p className="py-3 text-center text-xs text-muted-foreground">
                         {dragState && dragState.fromTopicId !== topic.id
@@ -689,7 +700,7 @@ export function VaultClient() {
         <div className="space-y-8">
           {timelineGroups.map(([dateKey, dateWords]) => (
             <section key={dateKey} className="space-y-3">
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card-solid px-3.5 py-1 text-xs font-bold text-foreground shadow-xs">
                   <Calendar className="h-3.5 w-3.5 text-primary" />
                   <span>{formatReadableDate(dateKey)}</span>

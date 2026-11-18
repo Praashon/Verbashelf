@@ -47,10 +47,10 @@ function MoveTopicMenu({
         setIsOpen(false);
       }
     };
-    document.addEventListener("mousedown", handleOutside);
+    document.addEventListener("pointerdown", handleOutside);
     document.addEventListener("keydown", handleEsc);
     return () => {
-      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("pointerdown", handleOutside);
       document.removeEventListener("keydown", handleEsc);
     };
   }, [isOpen]);
@@ -66,7 +66,7 @@ function MoveTopicMenu({
         aria-expanded={isOpen}
         aria-label={`Move ${wordLabel} to topic`}
         className={cn(
-          "inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition-all",
+          "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition-all sm:h-7",
           isOpen
             ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
             : "border-border bg-card-solid/90 text-foreground hover:border-primary/50 hover:text-primary"
@@ -88,7 +88,7 @@ function MoveTopicMenu({
         <div
           role="listbox"
           aria-label={`Select destination topic for ${wordLabel}`}
-          className="absolute right-0 z-50 mt-1.5 w-52 rounded-2xl border border-border bg-card-solid p-1.5 shadow-[0_20px_48px_-12px_rgba(15,20,25,0.28)] ring-1 ring-black/5 backdrop-blur-xl animate-word-drop dark:ring-white/10 dark:shadow-[0_24px_55px_-12px_rgba(0,0,0,0.9)]"
+          className="absolute left-0 z-50 mt-1.5 w-52 max-w-[calc(100vw-3rem)] rounded-2xl border border-border bg-card-solid p-1.5 shadow-[0_20px_48px_-12px_rgba(15,20,25,0.28)] ring-1 ring-black/5 backdrop-blur-xl animate-word-drop dark:ring-white/10 dark:shadow-[0_24px_55px_-12px_rgba(0,0,0,0.9)] sm:left-auto sm:right-0"
         >
           <div className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             Move to topic
@@ -196,47 +196,37 @@ export function WordCard({
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       className={cn(
-        "group relative rounded-2xl border p-5 sm:p-6 backdrop-blur-md transition-all duration-300 ease-out",
+        "group relative rounded-2xl border p-4 sm:p-6 backdrop-blur-md transition-all duration-300 ease-out",
         animateDrop && "animate-word-drop",
-        draggable && "cursor-grab active:cursor-grabbing",
+        draggable && "sm:cursor-grab sm:active:cursor-grabbing",
         isDragging && "opacity-45 scale-[0.98] ring-2 ring-primary/50",
         faded
           ? [
-              "border-slate-200/80 bg-white/55 opacity-60 saturate-[0.14] scale-[0.985] shadow-xs",
-              "dark:border-zinc-800/80 dark:bg-[#16181c]/55",
-              "hover:opacity-100 hover:saturate-100 hover:scale-[1.015] hover:-translate-y-1.5",
+              "verba-card-faded border-border/90 bg-card shadow-xs",
               "hover:bg-white/95 hover:border-primary/60 hover:shadow-[0_22px_48px_-14px_rgba(29,155,240,0.34)]",
               "dark:hover:bg-[#16181c]/95 dark:hover:border-primary/60 dark:hover:shadow-[0_22px_48px_-14px_rgba(29,155,240,0.28)]",
-              "focus-within:opacity-100 focus-within:saturate-100 focus-within:scale-[1.01]",
             ]
           : "border-border/90 bg-card shadow-[0_14px_38px_-16px_rgba(15,20,25,0.22)] dark:shadow-[0_16px_40px_-14px_rgba(0,0,0,0.75)]"
       )}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
           {draggable ? (
             <span
               title="Drag to move to another topic folder"
               aria-hidden="true"
-              className="inline-flex h-7 w-5 items-center justify-center rounded-md text-muted-foreground/60 transition-colors group-hover:text-primary"
+              className="hidden h-7 w-5 items-center justify-center rounded-md text-muted-foreground/60 transition-colors group-hover:text-primary sm:inline-flex"
             >
               <GripVertical className="h-4 w-4" />
             </span>
           ) : null}
 
-          <h2
-            className={cn(
-              "text-2xl font-bold tracking-tight capitalize transition-colors duration-200 sm:text-3xl",
-              faded
-                ? "text-slate-600 group-hover:text-foreground dark:text-zinc-300 dark:group-hover:text-white"
-                : "text-foreground"
-            )}
-          >
+          <h2 className="text-xl font-bold tracking-tight capitalize break-words [overflow-wrap:anywhere] text-foreground transition-colors duration-200 sm:text-3xl">
             {view.word}
           </h2>
 
           {view.phonetic ? (
-            <span className="rounded-lg bg-muted/90 px-2.5 py-1 font-mono text-xs text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary sm:text-sm">
+            <span className="max-w-full break-all rounded-lg bg-muted/90 px-2.5 py-1 font-mono text-xs text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary sm:break-normal sm:text-sm">
               {view.phonetic}
             </span>
           ) : null}
@@ -248,7 +238,7 @@ export function WordCard({
               aria-label={`Play pronunciation for ${view.word}`}
               title="Listen to pronunciation"
               className={cn(
-                "inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border transition-all",
+                "inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border transition-all sm:h-8 sm:w-8",
                 isPlaying
                   ? "border-primary bg-primary text-white scale-105"
                   : "border-border bg-card-solid/80 text-foreground hover:border-primary hover:text-primary"
@@ -261,13 +251,7 @@ export function WordCard({
 
         <div className="flex flex-wrap items-center gap-1.5">
           {wasExisting && previousDateKey ? (
-            <Badge
-              variant="violet"
-              className={cn(
-                "transition-all",
-                faded && "opacity-75 group-hover:opacity-100"
-              )}
-            >
+            <Badge variant="violet" className="transition-all">
               <History className="h-3 w-3" />
               <span>Previously saved on {formatReadableDate(previousDateKey)}</span>
             </Badge>
@@ -360,7 +344,7 @@ export function WordCard({
               onClick={onDelete}
               aria-label={`Move ${view.word} to Trash`}
               title="Move to Trash"
-              className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-transparent text-muted-foreground transition-colors hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+              className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-transparent text-muted-foreground transition-colors hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive sm:h-7 sm:w-7"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
@@ -373,7 +357,7 @@ export function WordCard({
           className={cn(
             "mt-4 rounded-xl border px-3.5 py-2.5 text-sm leading-relaxed transition-colors duration-200",
             faded
-              ? "border-border/70 bg-muted/40 text-slate-700 group-hover:border-primary/35 group-hover:bg-primary/8 group-hover:text-foreground dark:text-zinc-300 dark:group-hover:text-zinc-100"
+              ? "border-border/70 bg-muted/40 text-foreground group-hover:border-primary/35 group-hover:bg-primary/8"
               : "border-primary/25 bg-primary/8 text-foreground"
           )}
         >
@@ -395,7 +379,7 @@ export function WordCard({
                 className={cn(
                   "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold uppercase tracking-wide transition-colors duration-200",
                   faded
-                    ? "bg-slate-200/80 text-slate-600 group-hover:bg-primary/15 group-hover:text-primary dark:bg-zinc-800 dark:text-zinc-400 dark:group-hover:bg-primary/20 dark:group-hover:text-sky-300"
+                    ? "bg-slate-200/80 text-slate-700 group-hover:bg-primary/15 group-hover:text-primary dark:bg-zinc-800 dark:text-zinc-300 dark:group-hover:bg-primary/20 dark:group-hover:text-sky-300"
                     : "bg-primary/14 text-primary"
                 )}
               >
@@ -413,15 +397,8 @@ export function WordCard({
                   <span className="mt-0.5 font-mono text-xs font-semibold text-muted-foreground transition-colors group-hover:text-primary">
                     {dIdx + 1}.
                   </span>
-                  <div className="space-y-1.5">
-                    <p
-                      className={cn(
-                        "transition-colors duration-200",
-                        faded
-                          ? "text-slate-700 group-hover:text-foreground dark:text-zinc-300 dark:group-hover:text-zinc-100"
-                          : "text-foreground"
-                      )}
-                    >
+                  <div className="min-w-0 space-y-1.5">
+                    <p className="text-foreground transition-colors duration-200">
                       {def.definition}
                     </p>
                     {def.example ? (
@@ -470,12 +447,12 @@ export function WordCard({
       </div>
 
       {!onDelete ? (
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border/50 pt-3 text-[11px] text-muted-foreground">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-border/50 pt-3 text-[11px] text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
             <BookmarkCheck className="h-3.5 w-3.5 text-emerald-500" />
             <span>Saved locally in your IndexedDB Vault</span>
           </span>
-          <span className="flex items-center gap-2">
+          <span className="flex flex-wrap items-center gap-2">
             {view.enrichedSources && view.enrichedSources.length > 0 ? (
               <span>Sources: {view.enrichedSources.join(", ")}</span>
             ) : null}

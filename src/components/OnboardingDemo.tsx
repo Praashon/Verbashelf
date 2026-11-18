@@ -745,29 +745,34 @@ export function OnboardingDemo() {
       role="dialog"
       aria-modal="true"
       aria-labelledby="onboarding-demo-title"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-5"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2.5 backdrop-blur-sm sm:p-5"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           handleClose();
         }
       }}
     >
-      <div className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-border bg-card-solid shadow-2xl animate-word-drop">
-        <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4 sm:px-6">
-          <div>
+      <div className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-border bg-card-solid shadow-2xl animate-word-drop">
+        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-6 sm:py-4">
+          <div className="min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">
               Interactive Live Guide (Step {step + 1} of {STAGE_TITLES.length})
             </p>
             <h2
               id="onboarding-demo-title"
-              className="text-base font-bold text-foreground sm:text-lg"
+              className="truncate text-base font-bold text-foreground sm:text-lg"
             >
               {STAGE_TITLES[step]}
             </h2>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={handleClose}>
+          <div className="flex shrink-0 items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClose}
+              className="hidden sm:inline-flex"
+            >
               Skip
             </Button>
             <Button
@@ -781,14 +786,14 @@ export function OnboardingDemo() {
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-1.5 border-b border-border/60 bg-muted/35 px-5 py-2.5 sm:px-6">
+        <div className="grid grid-cols-2 gap-1.5 border-b border-border/60 bg-muted/35 px-4 py-2 sm:grid-cols-4 sm:px-6 sm:py-2.5">
           {STAGE_TITLES.map((title, idx) => (
             <button
               key={title}
               type="button"
               onClick={() => setStep(idx)}
               className={cn(
-                "cursor-pointer truncate rounded-lg px-2 py-1 text-center text-[11px] font-semibold transition-colors",
+                "cursor-pointer truncate rounded-lg px-2 py-1.5 text-center text-[11px] font-semibold transition-colors sm:py-1",
                 step === idx
                   ? "bg-primary text-white shadow-xs"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -799,7 +804,7 @@ export function OnboardingDemo() {
           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+        <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
           {step === 0 ? (
             <StageOneLookup key="stage-1" />
           ) : step === 1 ? (
@@ -811,7 +816,7 @@ export function OnboardingDemo() {
           )}
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-border px-5 py-3.5 sm:px-6">
+        <div className="flex items-center justify-between gap-2 border-t border-border px-4 py-3 sm:gap-3 sm:px-6 sm:py-3.5">
           <div className="flex items-center gap-2">
             {step > 0 ? (
               <Button

@@ -161,8 +161,8 @@ export function SettingsDrawer() {
         }
       }}
     >
-      <aside className="flex h-full w-full max-w-md flex-col border-l border-border bg-card-solid shadow-2xl">
-        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+      <aside className="flex h-[100dvh] w-full max-w-md flex-col border-l border-border bg-card-solid shadow-2xl">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3.5 sm:px-6 sm:py-4">
           <div>
             <h2
               id="settings-drawer-title"
@@ -184,7 +184,7 @@ export function SettingsDrawer() {
           </Button>
         </div>
 
-        <div className="flex-1 space-y-6 overflow-y-auto px-6 py-5">
+        <div className="flex-1 space-y-6 overflow-y-auto px-4 py-4 pb-8 sm:px-6 sm:py-5">
           <section className="space-y-3">
             <div>
               <h3 className="text-sm font-semibold text-foreground">
@@ -358,7 +358,7 @@ export function SettingsDrawer() {
                         : "Manual: press Enter, Go, or use Voice Mic to search."}
                 </p>
               </div>
-              <div className="grid grid-cols-4 gap-1.5 rounded-xl border border-border bg-muted/60 p-1">
+              <div className="grid grid-cols-2 gap-1.5 rounded-xl border border-border bg-muted/60 p-1 sm:grid-cols-4">
                 {(
                   [
                     { value: "fast", label: "Fast" },
@@ -387,7 +387,7 @@ export function SettingsDrawer() {
             </div>
 
             <div className="space-y-2.5 border-t border-border/60 pt-3">
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <p className="text-sm font-medium text-foreground">
                     Push-to-Talk Shortcut
@@ -503,9 +503,9 @@ export function SettingsDrawer() {
             </Button>
 
             <div className="space-y-2 border-t border-border/60 pt-3">
-              <div className="flex items-center justify-between text-xs">
+              <div className="flex flex-col items-stretch gap-2 text-xs sm:flex-row sm:items-center sm:justify-between">
                 <span className="font-medium text-foreground">Import Mode</span>
-                <div className="inline-flex rounded-lg border border-border bg-muted/60 p-0.5">
+                <div className="grid grid-cols-2 rounded-lg border border-border bg-muted/60 p-0.5 sm:inline-flex">
                   <button
                     type="button"
                     onClick={() => setImportMode("merge")}
@@ -581,20 +581,21 @@ export function SettingsDrawer() {
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <input
                 type="text"
                 value={wipeConfirmText}
                 onChange={(e) => setWipeConfirmText(e.target.value)}
                 placeholder="Type DELETE"
                 aria-label="Type DELETE to confirm wiping all local vault data"
-                className="h-9 flex-1 rounded-xl border border-border bg-background/90 px-3 font-mono text-xs text-foreground focus:border-destructive focus:outline-none"
+                className="h-10 min-w-0 flex-1 rounded-xl border border-border bg-background/90 px-3 font-mono text-base text-foreground focus:border-destructive focus:outline-none sm:h-9 sm:text-xs"
               />
               <Button
                 variant="destructive"
                 size="sm"
                 disabled={wipeConfirmText.trim() !== "DELETE" || isBusy}
                 onClick={handleWipe}
+                className="w-full justify-center sm:w-auto"
               >
                 <Trash2 className="h-3.5 w-3.5" />
                 <span>Wipe All</span>

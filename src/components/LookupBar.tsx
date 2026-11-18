@@ -202,7 +202,7 @@ export function LookupBar({
         role="search"
         aria-label="Dictionary word search"
         className={cn(
-          "relative flex items-center gap-2 rounded-full p-2 pl-5 transition-all duration-200",
+          "relative flex items-center gap-1.5 rounded-full p-1.5 pl-3.5 transition-all duration-200 sm:gap-2 sm:p-2 sm:pl-5",
           "bg-[#141414] text-zinc-100 border border-black/15",
           "shadow-[0_18px_40px_-14px_rgba(15,20,25,0.45)]",
           "focus-within:ring-2 focus-within:ring-primary/70 focus-within:border-primary/60",
@@ -323,8 +323,8 @@ export function LookupBar({
       </form>
 
       {downloadProgress !== null ? (
-        <div className="mx-auto mt-2.5 max-w-md space-y-1.5 rounded-2xl border border-border/80 bg-card/85 px-4 py-2.5 backdrop-blur-md">
-          <div className="flex items-center justify-between gap-2 text-xs font-medium text-foreground">
+        <div className="mx-auto mt-2.5 max-w-md space-y-1.5 rounded-2xl border border-border/80 bg-card/85 px-3 py-2.5 backdrop-blur-md sm:px-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-medium text-foreground">
             <span>Downloading local voice engine (cached offline)</span>
             <div className="flex items-center gap-2">
               <span className="font-mono font-semibold text-primary">
@@ -349,7 +349,7 @@ export function LookupBar({
       ) : statusMessage ? (
         <div
           role="status"
-          className="mt-2 flex items-center justify-center gap-2 text-center text-xs font-medium text-primary"
+          className="mt-2 flex flex-wrap items-center justify-center gap-2 px-2 text-center text-xs font-medium text-primary"
         >
           {(isProcessing || !isListening) && (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -367,7 +367,7 @@ export function LookupBar({
       ) : voiceError ? (
         <div
           role="alert"
-          className="mt-2.5 flex items-center justify-center gap-2 text-center text-xs font-medium text-destructive"
+          className="mt-2.5 flex flex-wrap items-center justify-center gap-2 px-2 text-center text-xs font-medium text-destructive"
         >
           <span>{voiceError}</span>
           <button
@@ -380,27 +380,32 @@ export function LookupBar({
           </button>
         </div>
       ) : isSupported ? (
-        <p className="mt-2 hidden items-center justify-center gap-2 text-[11px] text-muted-foreground sm:flex">
-          <span>
-            Press{" "}
-            <kbd className="rounded border border-border bg-card px-1.5 py-0.5 font-mono text-[10px]">
-              /
-            </kbd>{" "}
-            to type
-          </span>
-          {pushToTalkKey ? (
-            <>
-              <span aria-hidden="true">|</span>
-              <span>
-                Hold{" "}
-                <kbd className="rounded border border-border bg-card px-1.5 py-0.5 font-mono text-[10px]">
-                  {pttLabel}
-                </kbd>{" "}
-                for push-to-talk voice
-              </span>
-            </>
-          ) : null}
-        </p>
+        <>
+          <p className="mt-2 hidden items-center justify-center gap-2 text-[11px] text-muted-foreground sm:flex">
+            <span>
+              Press{" "}
+              <kbd className="rounded border border-border bg-card px-1.5 py-0.5 font-mono text-[10px]">
+                /
+              </kbd>{" "}
+              to type
+            </span>
+            {pushToTalkKey ? (
+              <>
+                <span aria-hidden="true">|</span>
+                <span>
+                  Hold{" "}
+                  <kbd className="rounded border border-border bg-card px-1.5 py-0.5 font-mono text-[10px]">
+                    {pttLabel}
+                  </kbd>{" "}
+                  for push-to-talk voice
+                </span>
+              </>
+            ) : null}
+          </p>
+          <p className="mt-2 flex items-center justify-center text-[11px] text-muted-foreground sm:hidden">
+            Tap the mic button to search by voice
+          </p>
+        </>
       ) : null}
     </div>
   );

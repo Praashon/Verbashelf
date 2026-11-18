@@ -241,8 +241,8 @@ export function HomeClient() {
     isProfileOpen || isSettingsOpen || isShareOpen || isOnboardingOpen;
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col items-center px-4 pb-20 pt-10 sm:px-6 sm:pt-14">
-      <div className="mb-8 space-y-3 text-center">
+    <div className="mx-auto flex w-full max-w-4xl flex-col items-center px-3.5 pb-16 pt-6 sm:px-6 sm:pb-20 sm:pt-14">
+      <div className="mb-5 space-y-2.5 text-center sm:mb-8 sm:space-y-3">
         <div className="inline-flex items-center gap-2 rounded-full border border-[#63e]/25 bg-white/75 px-3.5 py-1 text-xs font-medium text-[#5227cc] shadow-xs backdrop-blur-md dark:border-violet-400/25 dark:bg-zinc-900/80 dark:text-violet-300">
           <span
             aria-hidden="true"
@@ -251,7 +251,7 @@ export function HomeClient() {
           <span>100% Local-First Vocabulary Vault</span>
         </div>
 
-        <h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-5xl">
+        <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-5xl">
           Look up. Speak. Remember.
         </h1>
 
@@ -271,7 +271,7 @@ export function HomeClient() {
         disableGlobalShortcut={modalOpen}
       />
 
-      <div className="mt-4 flex w-full max-w-2xl flex-wrap items-center justify-center gap-2.5">
+      <div className="mt-3.5 flex w-full max-w-2xl flex-col items-center gap-2 sm:mt-4 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-2.5">
         <TopicSelector
           topics={topics}
           words={words}
@@ -297,11 +297,11 @@ export function HomeClient() {
       {lookupQuery.isError && lookupTrigger ? (
         <div
           role="alert"
-          className="mt-6 flex w-full max-w-2xl items-start justify-between gap-3 rounded-2xl border border-destructive/30 bg-card/90 p-4 text-sm text-foreground shadow-md backdrop-blur-md animate-word-drop"
+          className="mt-5 flex w-full max-w-2xl flex-col gap-3 rounded-2xl border border-destructive/30 bg-card/90 p-4 text-sm text-foreground shadow-md backdrop-blur-md animate-word-drop sm:mt-6 sm:flex-row sm:items-start sm:justify-between"
         >
-          <div className="flex items-start gap-3">
+          <div className="flex min-w-0 items-start gap-3">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-            <div>
+            <div className="min-w-0">
               <p className="font-semibold text-destructive">
                 {lookupQuery.error instanceof DictionaryNotFoundError
                   ? `No entry found for "${lookupTrigger.term}"`
@@ -333,7 +333,7 @@ export function HomeClient() {
           <button
             type="button"
             onClick={handleClearWorkspace}
-            className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-full border border-border bg-card-solid px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-destructive/40 hover:text-destructive"
+            className="inline-flex shrink-0 cursor-pointer items-center gap-1 self-end rounded-full border border-border bg-card-solid px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-destructive/40 hover:text-destructive sm:self-auto"
           >
             <RotateCcw className="h-3 w-3" />
             <span>Clear</span>
@@ -344,13 +344,22 @@ export function HomeClient() {
       {sessionCards.length > 0 ? (
         <section
           aria-label="Recent lookups"
-          className="mt-8 w-full max-w-2xl space-y-4"
+          className="mt-6 w-full max-w-2xl space-y-4 sm:mt-8"
         >
           <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-xs font-medium text-muted-foreground">
             <span>
-              {autoClearSearch
-                ? "Hover any faded card below to pop it into full color"
-                : "Latest lookup, auto-saved to your active topic"}
+              {autoClearSearch ? (
+                <>
+                  <span className="hidden sm:inline">
+                    Hover any faded card below to pop it into full color
+                  </span>
+                  <span className="sm:hidden">
+                    Latest lookup, auto-saved to your active topic
+                  </span>
+                </>
+              ) : (
+                "Latest lookup, auto-saved to your active topic"
+              )}
             </span>
             <div className="flex items-center gap-3">
               <button
@@ -397,7 +406,7 @@ export function HomeClient() {
           })}
         </section>
       ) : (
-        <div className="mt-8 w-full max-w-2xl space-y-8">
+        <div className="mt-6 w-full max-w-2xl space-y-6 sm:mt-8 sm:space-y-8">
           <div className="flex flex-wrap items-center justify-center gap-2">
             <span className="text-xs font-medium text-muted-foreground">
               Try looking up:
@@ -419,7 +428,13 @@ export function HomeClient() {
               <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-xs font-medium text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5">
                   <BookOpenCheck className="h-3.5 w-3.5 text-primary" />
-                  <span>Recently in your Vault (hover to bring into focus)</span>
+                  <span>
+                    Recently in your Vault
+                    <span className="hidden sm:inline">
+                      {" "}
+                      (hover to bring into focus)
+                    </span>
+                  </span>
                 </span>
                 <div className="flex items-center gap-3">
                   <button

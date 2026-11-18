@@ -73,9 +73,25 @@
   animation: wordDropIn 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .verba-card-faded {
+    opacity: 0.6;
+    filter: saturate(0.14);
+    transform: scale(0.985);
+  }
+
+  .verba-card-faded:hover,
+  .verba-card-faded:focus-within {
+    opacity: 1;
+    filter: saturate(1);
+    transform: translateY(-6px) scale(1.015);
+  }
+}
+
 body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  -webkit-tap-highlight-color: transparent;
 }
 
 ::-webkit-scrollbar {

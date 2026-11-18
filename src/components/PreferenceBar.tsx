@@ -22,7 +22,7 @@ export function PreferenceBar({
   onAutoClearSearchChange,
 }: PreferenceBarProps) {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-2.5">
+    <div className="flex w-full flex-wrap items-center justify-center gap-2 sm:w-auto sm:gap-2.5">
       <div
         role="group"
         aria-label="Definition detail mode"
@@ -32,7 +32,7 @@ export function PreferenceBar({
           type="button"
           onClick={() => onModeChange("concise")}
           className={cn(
-            "cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-all",
+            "cursor-pointer rounded-full px-2.5 py-1.5 text-xs font-medium transition-all sm:px-3 sm:py-1",
             mode === "concise"
               ? "bg-primary text-white shadow-xs"
               : "text-muted-foreground hover:text-foreground"
@@ -44,7 +44,7 @@ export function PreferenceBar({
           type="button"
           onClick={() => onModeChange("comprehensive")}
           className={cn(
-            "cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-all",
+            "cursor-pointer rounded-full px-2.5 py-1.5 text-xs font-medium transition-all sm:px-3 sm:py-1",
             mode === "comprehensive"
               ? "bg-primary text-white shadow-xs"
               : "text-muted-foreground hover:text-foreground"
@@ -54,7 +54,7 @@ export function PreferenceBar({
         </button>
       </div>
 
-      <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border/80 bg-card/85 px-3 py-1 text-xs font-medium text-foreground shadow-xs backdrop-blur-md">
+      <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border/80 bg-card/85 px-2.5 py-1.5 text-xs font-medium text-foreground shadow-xs backdrop-blur-md sm:px-3 sm:py-1">
         <span>Examples</span>
         <Switch
           checked={showExamples}
@@ -66,7 +66,7 @@ export function PreferenceBar({
       {autoClearSearch !== undefined && onAutoClearSearchChange ? (
         <label
           title="Clear the search input right after your answer arrives and drop cards into faded hover-to-pop-up mode below"
-          className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border/80 bg-card/85 px-3 py-1 text-xs font-medium text-foreground shadow-xs backdrop-blur-md"
+          className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border/80 bg-card/85 px-2.5 py-1.5 text-xs font-medium text-foreground shadow-xs backdrop-blur-md sm:px-3 sm:py-1"
         >
           <span>Auto-clear</span>
           <Switch

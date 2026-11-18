@@ -166,20 +166,20 @@ export function ShareModal() {
       role="dialog"
       aria-modal="true"
       aria-labelledby="share-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-xs"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-2.5 backdrop-blur-xs sm:p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           setIsShareOpen(false);
         }
       }}
     >
-      <div className="flex max-h-[88vh] w-full max-w-xl flex-col rounded-2xl border border-border bg-card-solid shadow-2xl animate-word-drop">
-        <div className="flex items-center justify-between border-b border-border px-6 py-4">
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15 text-primary">
+      <div className="flex max-h-[92dvh] w-full max-w-xl flex-col rounded-2xl border border-border bg-card-solid shadow-2xl animate-word-drop sm:max-h-[88vh]">
+        <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3.5 sm:px-6 sm:py-4">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
               <Share2 className="h-4 w-4" />
             </span>
-            <div>
+            <div className="min-w-0">
               <h2
                 id="share-modal-title"
                 className="text-base font-bold text-foreground sm:text-lg"
@@ -196,12 +196,13 @@ export function ShareModal() {
             size="icon"
             onClick={() => setIsShareOpen(false)}
             aria-label="Close share modal"
+            className="shrink-0"
           >
             <X className="h-4 w-4" />
           </Button>
         </div>
 
-        <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
+        <div className="flex-1 space-y-4 overflow-y-auto px-4 py-3.5 sm:px-6 sm:py-4">
           {words.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-border p-8 text-center">
               <p className="text-sm font-medium text-foreground">
@@ -214,7 +215,7 @@ export function ShareModal() {
           ) : (
             <>
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="inline-flex rounded-xl border border-border bg-muted/60 p-1">
+                <div className="grid w-full grid-cols-2 rounded-xl border border-border bg-muted/60 p-1 sm:inline-flex sm:w-auto">
                   <button
                     type="button"
                     onClick={() => handleSelectMode("all")}
@@ -268,22 +269,22 @@ export function ShareModal() {
                       className="rounded-xl border border-border/70 bg-card-solid p-3"
                     >
                       <label className="flex cursor-pointer items-center justify-between gap-2">
-                        <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                        <span className="flex min-w-0 items-center gap-2 text-sm font-semibold text-foreground">
                           <input
                             type="checkbox"
                             checked={allInTopicChecked}
                             onChange={() => toggleTopic(topic.id!)}
-                            className="h-4 w-4 rounded accent-[#1d9bf0]"
+                            className="h-4 w-4 shrink-0 rounded accent-[#1d9bf0]"
                           />
-                          <FolderOpen className="h-3.5 w-3.5 text-primary" />
-                          <span>{topic.name}</span>
+                          <FolderOpen className="h-3.5 w-3.5 shrink-0 text-primary" />
+                          <span className="truncate">{topic.name}</span>
                         </span>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="shrink-0 text-xs text-muted-foreground">
                           {topicCheckedCount}/{topicWords.length}
                         </span>
                       </label>
 
-                      <div className="mt-2.5 flex flex-wrap gap-1.5 pl-6">
+                      <div className="mt-2.5 flex flex-wrap gap-1.5 pl-1 sm:pl-6">
                         {topicWords.map((word) => {
                           if (word.id === undefined) return null;
                           const isChecked =
@@ -371,22 +372,27 @@ export function ShareModal() {
           )}
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-6 py-4">
+        <div className="flex flex-col-reverse items-stretch gap-2 border-t border-border px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4">
           {encoded ? (
-            <Button variant="outline" size="sm" onClick={handleDownloadJson}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadJson}
+              className="w-full justify-center sm:w-auto"
+            >
               <Download className="h-3.5 w-3.5" />
               <span>Export .json</span>
             </Button>
           ) : (
-            <span />
+            <span className="hidden sm:inline" />
           )}
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
             {encoded && !exceedsLimit ? (
               <Link
                 href={`/share#v1=${encoded.compressed}`}
                 onClick={() => setIsShareOpen(false)}
-                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-border px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted"
               >
                 <ExternalLink className="h-3.5 w-3.5" />
                 <span>Open Preview</span>
@@ -397,6 +403,7 @@ export function ShareModal() {
               variant="primary"
               disabled={!encoded || exceedsLimit}
               onClick={handleCopyUrl}
+              className="w-full justify-center sm:w-auto"
             >
               {copied ? (
                 <>

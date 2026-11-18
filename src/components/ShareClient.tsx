@@ -182,9 +182,9 @@ export function ShareClient() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 pb-20 pt-10 sm:px-6">
+    <div className="mx-auto w-full max-w-3xl px-3.5 pb-16 pt-6 sm:px-6 sm:pb-20 sm:pt-10">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
             <Share2 className="h-3.5 w-3.5" />
             <span>Zero-Database Shared Shelf</span>
@@ -226,7 +226,7 @@ export function ShareClient() {
           className="mb-6 flex items-start gap-3 rounded-2xl border border-destructive/35 bg-card/90 p-4 text-sm text-destructive backdrop-blur-md"
         >
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-          <div>
+          <div className="min-w-0">
             <p className="font-semibold">Unable to load shared payload</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {activeError}
@@ -251,7 +251,7 @@ export function ShareClient() {
       ) : null}
 
       {!activePayload ? (
-        <div className="rounded-3xl border border-dashed border-border bg-card/80 p-10 text-center backdrop-blur-md">
+        <div className="rounded-3xl border border-dashed border-border bg-card/80 p-8 text-center backdrop-blur-md sm:p-10">
           <Share2 className="mx-auto h-9 w-9 text-primary/70" />
           <h2 className="mt-4 text-base font-bold text-foreground">
             Nothing shared in this URL yet
@@ -270,7 +270,7 @@ export function ShareClient() {
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/80 bg-card/85 px-4 py-3 backdrop-blur-md">
+          <div className="flex flex-col items-stretch gap-2.5 rounded-2xl border border-border/80 bg-card/85 px-4 py-3 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between">
             <span className="text-xs font-medium text-muted-foreground">
               {selectedIndices.length} of {activePayload.items.length} selected
               for import
@@ -280,6 +280,7 @@ export function ShareClient() {
               variant="primary"
               disabled={selectedIndices.length === 0 || isImporting}
               onClick={handleImportSelected}
+              className="w-full justify-center sm:w-auto"
             >
               <Download className="h-4 w-4" />
               <span>
@@ -297,21 +298,21 @@ export function ShareClient() {
                 <label
                   key={`${item.term}-${item.topic}-${idx}`}
                   className={cn(
-                    "block cursor-pointer rounded-2xl border p-5 backdrop-blur-md transition-all",
+                    "block cursor-pointer rounded-2xl border p-4 backdrop-blur-md transition-all sm:p-5",
                     isSelected
                       ? "border-primary/45 bg-card/90 shadow-sm"
                       : "border-border/70 bg-card/55 opacity-60"
                   )}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex min-w-0 items-center gap-3">
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleItem(idx)}
-                        className="h-4 w-4 rounded accent-[#1d9bf0]"
+                        className="h-4 w-4 shrink-0 rounded accent-[#1d9bf0]"
                       />
-                      <h2 className="text-xl font-bold capitalize text-foreground">
+                      <h2 className="text-lg font-bold capitalize break-words [overflow-wrap:anywhere] text-foreground sm:text-xl">
                         {item.term}
                       </h2>
                     </div>
@@ -328,11 +329,11 @@ export function ShareClient() {
                     </div>
                   </div>
 
-                  <p className="mt-3 pl-7 text-sm leading-relaxed text-foreground">
+                  <p className="mt-2.5 pl-0 text-sm leading-relaxed text-foreground sm:mt-3 sm:pl-7">
                     {item.conciseMeaning}
                   </p>
                   {item.example ? (
-                    <p className="mt-2 ml-7 border-l-2 border-primary/40 pl-3 text-xs italic text-muted-foreground">
+                    <p className="mt-2 ml-0 border-l-2 border-primary/40 pl-3 text-xs italic text-muted-foreground sm:ml-7">
                       “{item.example}”
                     </p>
                   ) : null}
