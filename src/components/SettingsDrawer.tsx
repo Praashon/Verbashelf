@@ -1,12 +1,17 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import {
   AlertTriangle,
+  ChevronRight,
   Download,
+  FileText,
   Keyboard,
   Moon,
   Play,
+  Scale,
+  ShieldCheck,
   Sun,
   Trash2,
   Upload,
@@ -15,6 +20,7 @@ import {
 import { useAppUI } from "@/app/Providers";
 import { useVault } from "@/hooks/useVault";
 import { formatShortcutKeyLabel, type TypingSpeed } from "@/lib/db";
+import { LEGAL_OPERATOR } from "@/lib/legal";
 import {
   exportVaultBackup,
   importVaultBackup,
@@ -565,6 +571,68 @@ export function SettingsDrawer() {
                   {importError}
                 </p>
               ) : null}
+            </div>
+          </section>
+
+          <section className="space-y-3 rounded-2xl border border-border p-4">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">
+                Privacy &amp; Legal
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Transparent local-first policies &amp; operator details
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Link
+                href="/privacy"
+                onClick={() => setIsSettingsOpen(false)}
+                className="flex items-center justify-between rounded-xl border border-border/70 bg-background/60 px-3 py-2 text-xs font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-muted/70"
+              >
+                <span className="flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-primary" />
+                  <span>Privacy Policy</span>
+                </span>
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+              </Link>
+
+              <Link
+                href="/terms"
+                onClick={() => setIsSettingsOpen(false)}
+                className="flex items-center justify-between rounded-xl border border-border/70 bg-background/60 px-3 py-2 text-xs font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-muted/70"
+              >
+                <span className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-primary" />
+                  <span>Terms of Service</span>
+                </span>
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+              </Link>
+
+              <Link
+                href="/legal"
+                onClick={() => setIsSettingsOpen(false)}
+                className="flex items-center justify-between rounded-xl border border-border/70 bg-background/60 px-3 py-2 text-xs font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-muted/70"
+              >
+                <span className="flex items-center gap-2">
+                  <Scale className="h-4 w-4 text-primary" />
+                  <span>Legal Notice, Cookies &amp; Storage</span>
+                </span>
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+              </Link>
+            </div>
+
+            <div className="border-t border-border/60 pt-2.5 text-[11px] text-muted-foreground">
+              <p>
+                Operated by {LEGAL_OPERATOR.name} &middot;{" "}
+                {LEGAL_OPERATOR.location}
+              </p>
+              <a
+                href={`mailto:${LEGAL_OPERATOR.email}`}
+                className="font-medium text-primary hover:underline"
+              >
+                {LEGAL_OPERATOR.email}
+              </a>
             </div>
           </section>
 

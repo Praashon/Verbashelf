@@ -9,6 +9,7 @@ import React, {
   useState,
   useSyncExternalStore,
 } from "react";
+import { usePathname } from "next/navigation";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { CheckCircle2, Info, AlertCircle } from "lucide-react";
 import { ensureInitialSeed } from "@/lib/db";
@@ -195,13 +196,18 @@ export function Providers({ children }: { children: React.ReactNode }) {
     getServerOnboardingDoneSnapshot
   );
 
+  const pathname = usePathname();
+  const isLegalRoute =
+    pathname === "/privacy" || pathname === "/terms" || pathname === "/legal";
+
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [forceOnboardingOpen, setForceOnboardingOpen] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
-  const isOnboardingOpen = !hasSeenOnboarding || forceOnboardingOpen;
+  const isOnboardingOpen =
+    (!hasSeenOnboarding && !isLegalRoute) || forceOnboardingOpen;
 
   useEffect(() => {
     void ensureInitialSeed();
@@ -217,7 +223,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (hasSeenOnboarding) return;
+    if (hasSeenOnboarding || isLegalRoute) return;
     const handleUnload = () => {
       markOnboardingDone();
     };
@@ -227,7 +233,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       window.removeEventListener("pagehide", handleUnload);
       window.removeEventListener("beforeunload", handleUnload);
     };
-  }, [hasSeenOnboarding]);
+  }, [hasSeenOnboarding, isLegalRoute]);
 
   useEffect(() => {
     if (!toast) return;
