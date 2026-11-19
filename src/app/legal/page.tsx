@@ -108,7 +108,7 @@ export default function LegalCenterPage() {
               Application
             </dt>
             <dd className="mt-0.5 font-semibold text-foreground">
-              {LEGAL_OPERATOR.productName} &mdash; {LEGAL_OPERATOR.tagline}
+              {LEGAL_OPERATOR.productName}: {LEGAL_OPERATOR.tagline}
             </dd>
           </div>
           <div>
@@ -215,7 +215,7 @@ export default function LegalCenterPage() {
           {THIRD_PARTY_SERVICES.map((service) => (
             <li key={service.name}>
               <strong className="text-foreground">{service.name}</strong> (
-              <code className="font-mono text-xs">{service.host}</code>) &mdash; {service.purpose}{" "}
+              <code className="font-mono text-xs">{service.host}</code>): {service.purpose}{" "}
               {service.notes}
             </li>
           ))}

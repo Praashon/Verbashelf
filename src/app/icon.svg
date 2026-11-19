@@ -1,0 +1,14 @@
+<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .bg { fill: #f5f7fa; stroke: #cbd5e1; }
+    .v-stroke { stroke: #0f1419; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #16181c; stroke: #2f3336; }
+      .v-stroke { stroke: #e7e9ea; }
+    }
+  </style>
+  <rect class="bg" x="2" y="2" width="24" height="24" rx="6" stroke-width="1.25" />
+  <path class="v-stroke" d="M7.5 8.5L11.75 18.5L16 8.5" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M17.5 19.5H21.5" stroke="#1d9bf0" stroke-width="2.2" stroke-linecap="round" />
+  <path d="M19.5 8.5V15.5" stroke="#1d9bf0" stroke-width="2.1" stroke-linecap="round" />
+</svg>
