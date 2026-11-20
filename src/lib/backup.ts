@@ -33,6 +33,7 @@ const NormalizedDictionaryEntrySchema = z.object({
   sourceUrl: z.string().optional(),
   simpleDefinition: z.string().optional(),
   enrichedSources: z.array(z.string()).optional(),
+  relatedWords: z.array(z.string()).optional(),
   meanings: z.array(NormalizedMeaningSchema),
 });
 
@@ -48,12 +49,22 @@ const BackupProfileSchema = z.object({
     .optional()
     .default("balanced"),
   pushToTalkKey: z.string().optional().default("Space"),
+  showStats: z.boolean().optional().default(true),
 });
 
 const BackupTopicSchema = z.object({
   id: z.number().int().positive().optional(),
   name: z.string().min(1),
   createdAt: z.number(),
+});
+
+const WordSrsSchema = z.object({
+  repetitions: z.number().int().nonnegative(),
+  intervalDays: z.number().nonnegative(),
+  easeFactor: z.number().positive(),
+  nextReviewAt: z.number(),
+  lastReviewedAt: z.number().nullable(),
+  lapses: z.number().int().nonnegative(),
 });
 
 const BackupWordSchema = z.object({
@@ -68,6 +79,16 @@ const BackupWordSchema = z.object({
   dateKey: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   createdAt: z.number(),
   updatedAt: z.number(),
+  note: z.string().optional(),
+  customExample: z.string().optional(),
+  srs: WordSrsSchema.optional(),
+  nextReviewAt: z.number().optional(),
+});
+
+const BackupDailyStatSchema = z.object({
+  dateKey: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  wordsAdded: z.number().int().nonnegative(),
+  wordsReviewed: z.number().int().nonnegative(),
 });
 
 export const BackupPayloadSchema = z.object({
@@ -76,6 +97,7 @@ export const BackupPayloadSchema = z.object({
   profile: BackupProfileSchema.nullable().optional(),
   topics: z.array(BackupTopicSchema),
   words: z.array(BackupWordSchema),
+  dailyStats: z.array(BackupDailyStatSchema).optional(),
 });
 
 export type BackupPayload = z.infer<typeof BackupPayloadSchema>;
@@ -88,10 +110,11 @@ export interface ImportBackupResult {
 
 export async function buildBackupPayload(): Promise<BackupPayload> {
   await ensureInitialSeed();
-  const [profile, topics, words] = await Promise.all([
+  const [profile, topics, words, dailyStats] = await Promise.all([
     db.profile.get("me"),
     db.topics.orderBy("createdAt").toArray(),
     db.words.orderBy("updatedAt").toArray(),
+    db.dailyStats.toArray(),
   ]);
 
   return {
@@ -100,7 +123,41 @@ export async function buildBackupPayload(): Promise<BackupPayload> {
     profile: profile ?? { ...DEFAULT_PROFILE },
     topics,
     words,
+    dailyStats,
   };
+}
+
+export function exportSelectedWordsBackup(
+  selectedWords: WordRecord[],
+  topics: TopicRecord[],
+  profile: ProfileRecord | null
+): string {
+  const referencedTopicIds = new Set(selectedWords.map((w) => w.topicId));
+  const filteredTopics = topics.filter(
+    (t) => t.id !== undefined && referencedTopicIds.has(t.id)
+  );
+
+  const payload: BackupPayload = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    profile: profile ?? { ...DEFAULT_PROFILE },
+    topics: filteredTopics,
+    words: selectedWords,
+  };
+
+  const filename = `verbashelf-selected-${getLocalDateKey()}.json`;
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+  return filename;
 }
 
 export async function exportVaultBackup(): Promise<string> {
@@ -147,27 +204,36 @@ export async function importVaultBackup(
   let wordsAdded = 0;
   let wordsSkipped = 0;
 
-  await db.transaction("rw", db.topics, db.words, db.profile, async () => {
-    const topicIdMap = new Map<number, number>();
+  await db.transaction(
+    "rw",
+    [db.topics, db.words, db.profile, db.dailyStats],
+    async () => {
+      const topicIdMap = new Map<number, number>();
 
-    if (mode === "replace") {
-      await db.words.clear();
-      await db.topics.clear();
-      await db.profile.clear();
+      if (mode === "replace") {
+        await db.words.clear();
+        await db.topics.clear();
+        await db.profile.clear();
+        await db.dailyStats.clear();
 
-      const nextProfile: ProfileRecord = data.profile
-        ? {
-            id: "me",
-            displayName: data.profile.displayName,
-            avatarDataUrl: data.profile.avatarDataUrl,
-            defaultMode: data.profile.defaultMode,
-            defaultExamples: data.profile.defaultExamples,
-            autoClearSearch: data.profile.autoClearSearch ?? false,
-            typingSpeed: data.profile.typingSpeed ?? "balanced",
-            pushToTalkKey: data.profile.pushToTalkKey ?? "Space",
-          }
-        : { ...DEFAULT_PROFILE };
-      await db.profile.put(nextProfile);
+        const nextProfile: ProfileRecord = data.profile
+          ? {
+              id: "me",
+              displayName: data.profile.displayName,
+              avatarDataUrl: data.profile.avatarDataUrl,
+              defaultMode: data.profile.defaultMode,
+              defaultExamples: data.profile.defaultExamples,
+              autoClearSearch: data.profile.autoClearSearch ?? false,
+              typingSpeed: data.profile.typingSpeed ?? "balanced",
+              pushToTalkKey: data.profile.pushToTalkKey ?? "Space",
+              showStats: data.profile.showStats ?? true,
+            }
+          : { ...DEFAULT_PROFILE };
+        await db.profile.put(nextProfile);
+
+        if (Array.isArray(data.dailyStats) && data.dailyStats.length > 0) {
+          await db.dailyStats.bulkPut(data.dailyStats);
+        }
 
       for (const topic of data.topics) {
         const newId = await db.topics.add({
@@ -216,6 +282,13 @@ export async function importVaultBackup(
           dateKey: word.dateKey,
           createdAt: word.createdAt,
           updatedAt: word.updatedAt,
+          ...(word.note !== undefined ? { note: word.note } : {}),
+          ...(word.customExample !== undefined
+            ? { customExample: word.customExample }
+            : {}),
+          ...(word.srs !== undefined ? { srs: word.srs } : {}),
+          nextReviewAt:
+            word.nextReviewAt ?? word.srs?.nextReviewAt ?? word.createdAt,
         });
         wordsAdded += 1;
       }
@@ -288,6 +361,13 @@ export async function importVaultBackup(
         dateKey: word.dateKey,
         createdAt: word.createdAt,
         updatedAt: word.updatedAt,
+        ...(word.note !== undefined ? { note: word.note } : {}),
+        ...(word.customExample !== undefined
+          ? { customExample: word.customExample }
+          : {}),
+        ...(word.srs !== undefined ? { srs: word.srs } : {}),
+        nextReviewAt:
+          word.nextReviewAt ?? word.srs?.nextReviewAt ?? word.createdAt,
       });
       wordsAdded += 1;
     }
@@ -303,7 +383,23 @@ export async function importVaultBackup(
         autoClearSearch: data.profile.autoClearSearch ?? false,
         typingSpeed: data.profile.typingSpeed ?? "balanced",
         pushToTalkKey: data.profile.pushToTalkKey ?? "Space",
+        showStats: data.profile.showStats ?? true,
       });
+    }
+
+    if (Array.isArray(data.dailyStats)) {
+      for (const stat of data.dailyStats) {
+        const existing = await db.dailyStats.get(stat.dateKey);
+        if (!existing) {
+          await db.dailyStats.put(stat);
+        } else {
+          await db.dailyStats.put({
+            dateKey: stat.dateKey,
+            wordsAdded: Math.max(existing.wordsAdded, stat.wordsAdded),
+            wordsReviewed: Math.max(existing.wordsReviewed, stat.wordsReviewed),
+          });
+        }
+      }
     }
   });
 
@@ -313,12 +409,13 @@ export async function importVaultBackup(
 export async function wipeVaultData(): Promise<void> {
   await db.transaction(
     "rw",
-    [db.words, db.topics, db.profile, db.trash],
+    [db.words, db.topics, db.profile, db.trash, db.dailyStats],
     async () => {
       await db.words.clear();
       await db.topics.clear();
       await db.profile.clear();
       await db.trash.clear();
+      await db.dailyStats.clear();
     }
   );
   await ensureInitialSeed(true);
