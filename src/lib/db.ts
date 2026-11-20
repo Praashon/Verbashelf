@@ -1,6 +1,17 @@
 import Dexie, { type Table } from "dexie";
 import type { DisplayMode, NormalizedDictionaryEntry } from "@/lib/dictionary";
 
+export type ReviewRating = "hard" | "good" | "easy";
+
+export interface WordSrsState {
+  repetitions: number;
+  intervalDays: number;
+  easeFactor: number;
+  nextReviewAt: number;
+  lastReviewedAt: number | null;
+  lapses: number;
+}
+
 export interface TopicRecord {
   id?: number;
   name: string;
@@ -19,6 +30,10 @@ export interface WordRecord {
   dateKey: string;
   createdAt: number;
   updatedAt: number;
+  note?: string;
+  customExample?: string;
+  srs?: WordSrsState;
+  nextReviewAt?: number;
 }
 
 export interface TrashWordRecord {
@@ -35,6 +50,10 @@ export interface TrashWordRecord {
   createdAt: number;
   updatedAt: number;
   deletedAt: number;
+  note?: string;
+  customExample?: string;
+  srs?: WordSrsState;
+  nextReviewAt?: number;
 }
 
 export type TypingSpeed = "fast" | "balanced" | "relaxed" | "manual";
@@ -46,6 +65,12 @@ export const TYPING_SPEED_DELAY_MS: Record<TypingSpeed, number | null> = {
   manual: null,
 };
 
+export interface DailyStatRecord {
+  dateKey: string;
+  wordsAdded: number;
+  wordsReviewed: number;
+}
+
 export interface ProfileRecord {
   id: "me";
   displayName: string;
@@ -55,6 +80,7 @@ export interface ProfileRecord {
   autoClearSearch: boolean;
   typingSpeed: TypingSpeed;
   pushToTalkKey: string;
+  showStats: boolean;
 }
 
 export const DEFAULT_TOPIC_NAME = "General";
@@ -68,6 +94,7 @@ export const DEFAULT_PROFILE: ProfileRecord = {
   autoClearSearch: false,
   typingSpeed: "balanced",
   pushToTalkKey: "Space",
+  showStats: true,
 };
 
 const SPECIAL_KEY_LABELS: Record<string, string> = {
@@ -125,6 +152,7 @@ class VerbaShelfDB extends Dexie {
   words!: Table<WordRecord, number>;
   profile!: Table<ProfileRecord, string>;
   trash!: Table<TrashWordRecord, number>;
+  dailyStats!: Table<DailyStatRecord, string>;
 
   constructor() {
     super("VerbaShelfDB");
@@ -139,6 +167,23 @@ class VerbaShelfDB extends Dexie {
       words: "++id, term, topicId, [term+topicId], dateKey, createdAt, updatedAt",
       profile: "id",
       trash: "++id, term, deletedAt",
+    });
+
+    this.version(3).stores({
+      topics: "++id, name, createdAt",
+      words:
+        "++id, term, topicId, [term+topicId], dateKey, createdAt, updatedAt, nextReviewAt",
+      profile: "id",
+      trash: "++id, term, deletedAt",
+    });
+
+    this.version(4).stores({
+      topics: "++id, name, createdAt",
+      words:
+        "++id, term, topicId, [term+topicId], dateKey, createdAt, updatedAt, nextReviewAt",
+      profile: "id",
+      trash: "++id, term, deletedAt",
+      dailyStats: "dateKey",
     });
 
     this.on("populate", (tx) => {

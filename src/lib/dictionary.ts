@@ -28,6 +28,7 @@ export interface NormalizedDictionaryEntry {
   sourceUrl?: string;
   simpleDefinition?: string;
   enrichedSources?: string[];
+  relatedWords?: string[];
   meanings: NormalizedMeaning[];
 }
 
@@ -39,6 +40,7 @@ export interface ReshapedWordView {
   sourceUrl?: string;
   simpleDefinition?: string;
   enrichedSources?: string[];
+  relatedWords?: string[];
   meanings: NormalizedMeaning[];
   totalMeanings: number;
   totalDefinitions: number;
@@ -217,6 +219,8 @@ interface DatamuseResult {
   lexicalMeanings: NormalizedMeaning[];
   properNounMeanings: NormalizedMeaning[];
   synonyms: string[];
+  antonyms: string[];
+  relatedWords: string[];
 }
 
 interface WikipediaSummaryResponse {
@@ -345,11 +349,20 @@ async function fetchDatamuseEnrichment(
   const synUrl = `https://api.datamuse.com/words?rel_syn=${encodeURIComponent(
     term
   )}&max=6`;
+  const antUrl = `https://api.datamuse.com/words?rel_ant=${encodeURIComponent(
+    term
+  )}&max=6`;
+  const relUrl = `https://api.datamuse.com/words?rel_trg=${encodeURIComponent(
+    term
+  )}&max=6`;
 
-  const [defSettled, synSettled] = await Promise.allSettled([
-    fetchJsonWithTimeout<DatamuseWordItem[]>(defUrl, parentSignal, 1800),
-    fetchJsonWithTimeout<DatamuseWordItem[]>(synUrl, parentSignal, 1800),
-  ]);
+  const [defSettled, synSettled, antSettled, relSettled] =
+    await Promise.allSettled([
+      fetchJsonWithTimeout<DatamuseWordItem[]>(defUrl, parentSignal, 1800),
+      fetchJsonWithTimeout<DatamuseWordItem[]>(synUrl, parentSignal, 1800),
+      fetchJsonWithTimeout<DatamuseWordItem[]>(antUrl, parentSignal, 1800),
+      fetchJsonWithTimeout<DatamuseWordItem[]>(relUrl, parentSignal, 1800),
+    ]);
 
   if (parentSignal?.aborted) {
     throw new DOMException("Aborted", "AbortError");
@@ -422,13 +435,35 @@ async function fetchDatamuseEnrichment(
     }
   }
 
+  const antonyms: string[] = [];
+  if (antSettled.status === "fulfilled" && Array.isArray(antSettled.value)) {
+    for (const item of antSettled.value) {
+      const w = item.word?.trim().toLowerCase();
+      if (w && w !== term) {
+        antonyms.push(w);
+      }
+    }
+  }
+
+  const relatedWords: string[] = [];
+  if (relSettled.status === "fulfilled" && Array.isArray(relSettled.value)) {
+    for (const item of relSettled.value) {
+      const w = item.word?.trim().toLowerCase();
+      if (w && w !== term) {
+        relatedWords.push(w);
+      }
+    }
+  }
+
   const lexicalMeanings = Array.from(lexicalMap.values());
   const properNounMeanings = Array.from(properNounMap.values());
   if (
     posOrder.length === 0 &&
     lexicalMeanings.length === 0 &&
     properNounMeanings.length === 0 &&
-    synonyms.length === 0
+    synonyms.length === 0 &&
+    antonyms.length === 0 &&
+    relatedWords.length === 0
   ) {
     return null;
   }
@@ -438,6 +473,8 @@ async function fetchDatamuseEnrichment(
     lexicalMeanings,
     properNounMeanings,
     synonyms: uniqueStrings(synonyms).slice(0, 6),
+    antonyms: uniqueStrings(antonyms).slice(0, 6),
+    relatedWords: uniqueStrings(relatedWords).slice(0, 6),
   };
 }
 
@@ -862,6 +899,33 @@ function enrichEntry(
     ]).slice(0, 6);
   }
 
+  if (meanings[0] && meanings[0].antonyms.length < 3 && datamuseResult) {
+    const extraAnts = datamuseResult.antonyms.filter(
+      (ant) => ant.toLowerCase() !== term
+    );
+    meanings[0].antonyms = uniqueStrings([
+      ...meanings[0].antonyms,
+      ...extraAnts,
+    ]).slice(0, 6);
+  }
+
+  const shownSynsAndAnts = new Set<string>(
+    meanings.flatMap((m) => [
+      ...m.synonyms.map((s) => s.toLowerCase()),
+      ...m.antonyms.map((a) => a.toLowerCase()),
+      ...m.definitions.flatMap((d) => [
+        ...d.synonyms.map((s) => s.toLowerCase()),
+        ...d.antonyms.map((a) => a.toLowerCase()),
+      ]),
+    ])
+  );
+
+  const relatedWords = uniqueStrings(
+    (datamuseResult?.relatedWords ?? []).filter(
+      (w) => w.toLowerCase() !== term && !shownSynsAndAnts.has(w.toLowerCase())
+    )
+  ).slice(0, 6);
+
   const enrichedSources: string[] = [];
   if (base.source === "dictionaryapi") {
     enrichedSources.push("DictionaryAPI");
@@ -879,7 +943,10 @@ function enrichEntry(
   if (
     datamuseResult &&
     !enrichedSources.includes("Datamuse") &&
-    (datamuseResult.posOrder.length > 0 || datamuseResult.synonyms.length > 0)
+    (datamuseResult.posOrder.length > 0 ||
+      datamuseResult.synonyms.length > 0 ||
+      datamuseResult.antonyms.length > 0 ||
+      relatedWords.length > 0)
   ) {
     enrichedSources.push("Datamuse");
   }
@@ -888,6 +955,7 @@ function enrichEntry(
     ...base,
     simpleDefinition: simpleResult?.simpleDefinition ?? base.simpleDefinition,
     enrichedSources,
+    ...(relatedWords.length > 0 ? { relatedWords } : {}),
     meanings,
   };
 }
@@ -1028,7 +1096,8 @@ export function reshapeDictionaryEntry(
       example: showExamples ? def.example : undefined,
       synonyms:
         mode === "concise" ? def.synonyms.slice(0, 4) : [...def.synonyms],
-      antonyms: mode === "concise" ? [] : [...def.antonyms],
+      antonyms:
+        mode === "concise" ? def.antonyms.slice(0, 4) : [...def.antonyms],
     }));
 
     const combinedSynonyms = uniqueStrings([
@@ -1036,14 +1105,27 @@ export function reshapeDictionaryEntry(
       ...selectedDefs.flatMap((d) => d.synonyms),
     ]);
 
+    const combinedAntonyms = uniqueStrings([
+      ...meaning.antonyms,
+      ...selectedDefs.flatMap((d) => d.antonyms),
+    ]);
+
     return {
       partOfSpeech: meaning.partOfSpeech,
       definitions,
       synonyms:
         mode === "concise" ? combinedSynonyms.slice(0, 5) : combinedSynonyms,
-      antonyms: mode === "concise" ? [] : [...meaning.antonyms],
+      antonyms:
+        mode === "concise" ? combinedAntonyms.slice(0, 4) : combinedAntonyms,
     };
   });
+
+  const relatedWords =
+    entry.relatedWords && entry.relatedWords.length > 0
+      ? mode === "concise"
+        ? entry.relatedWords.slice(0, 5)
+        : [...entry.relatedWords]
+      : undefined;
 
   return {
     word: entry.word,
@@ -1053,6 +1135,7 @@ export function reshapeDictionaryEntry(
     sourceUrl: entry.sourceUrl,
     simpleDefinition: entry.simpleDefinition,
     enrichedSources: entry.enrichedSources,
+    relatedWords,
     meanings,
     totalMeanings,
     totalDefinitions,
