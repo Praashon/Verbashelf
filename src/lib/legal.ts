@@ -56,42 +56,42 @@ export interface StorageInventoryItem {
 
 export const LOCAL_STORAGE_INVENTORY: ReadonlyArray<StorageInventoryItem> = [
   {
-    keyName: "IndexedDB — VerbaShelfDB (topics, words, profile, trash)",
+    keyName: "IndexedDB: VerbaShelfDB (topics, words, profile, trash, dailyStats)",
     category: "Local Database (Dexie.js)",
     purpose:
-      "Stores saved vocabulary entries, dictionary definitions, custom topic folders, soft-deleted Trash items, local display name, canvas-compressed avatar (<= 160x160 px), and lookup/shortcut preferences.",
+      "Stores saved vocabulary entries, dictionary definitions, custom topic folders, soft-deleted Trash items, local review counts, local display name, canvas-compressed avatar (<= 160x160 px), and lookup/shortcut preferences.",
     retention:
       "Stays on your device until you delete entries, wipe the vault in Settings, or clear browser site data.",
   },
   {
-    keyName: "localStorage — verbashelf-theme",
+    keyName: "localStorage: verbashelf-theme",
     category: "Preference",
     purpose: "Remembers your Light or Dark theme selection before first paint.",
     retention: "Until changed or browser storage is cleared.",
   },
   {
-    keyName: "localStorage — verbashelf-active-topic",
+    keyName: "localStorage: verbashelf-active-topic",
     category: "Preference",
     purpose:
       "Remembers your most recently selected active topic folder on the Lookup page.",
     retention: "Until changed or browser storage is cleared.",
   },
   {
-    keyName: "localStorage — verbashelf-onboarding-v1",
+    keyName: "localStorage: verbashelf-onboarding-v1",
     category: "Preference",
     purpose:
       "Tracks whether you have already seen or dismissed the Interactive Live Guide.",
     retention: "Until browser storage is cleared.",
   },
   {
-    keyName: "localStorage — verbashelf-voice-model-v2",
+    keyName: "localStorage: verbashelf-voice-model-v2",
     category: "Voice Cache Flag",
     purpose:
       "Records whether the on-device Whisper voice model has already been cached in your browser.",
     retention: "Until browser storage is cleared.",
   },
   {
-    keyName: "Browser Cache Storage — Transformers.js / ONNX WASM",
+    keyName: "Browser Cache Storage: Transformers.js / ONNX WASM",
     category: "Model Cache",
     purpose:
       "Caches the downloaded onnx-community/whisper-base.en quantized model and WebAssembly runtime locally so subsequent voice searches run offline on-device.",
@@ -99,7 +99,15 @@ export const LOCAL_STORAGE_INVENTORY: ReadonlyArray<StorageInventoryItem> = [
       "Managed by browser cache; removable anytime via browser site data settings.",
   },
   {
-    keyName: "HTTP Cookies — None",
+    keyName: "Service Worker Cache Storage: verbashelf-pwa-v1",
+    category: "Offline App Shell",
+    purpose:
+      "Caches VerbaShelf static pages, icons, and web manifest locally so installed or returning browsers can open your Vault and Study modes offline.",
+    retention:
+      "Managed by your browser service worker cache; removable via browser site data settings.",
+  },
+  {
+    keyName: "HTTP Cookies: None",
     category: "Cookies",
     purpose:
       "VerbaShelf sets zero first-party tracking, analytics, advertising, or authentication cookies.",
