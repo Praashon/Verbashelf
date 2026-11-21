@@ -6,10 +6,11 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   useSyncExternalStore,
 } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { CheckCircle2, Info, AlertCircle } from "lucide-react";
 import { ensureInitialSeed } from "@/lib/db";
@@ -22,6 +23,8 @@ import { ProfileModal } from "@/components/ProfileModal";
 import { SettingsDrawer } from "@/components/SettingsDrawer";
 import { ShareModal } from "@/components/ShareModal";
 import { OnboardingDemo } from "@/components/OnboardingDemo";
+import { PwaManager } from "@/components/PwaManager";
+import { CommandPalette } from "@/components/CommandPalette";
 
 export type ThemeMode = "light" | "dark";
 
@@ -149,6 +152,10 @@ interface AppUIContextValue {
   isOnboardingOpen: boolean;
   openOnboarding: () => void;
   closeOnboarding: () => void;
+  isCommandOpen: boolean;
+  commandInitialTab: "commands" | "shortcuts";
+  openCommandPalette: (tab?: "commands" | "shortcuts") => void;
+  closeCommandPalette: () => void;
   showToast: (
     message: string,
     tone?: "info" | "success" | "error",
@@ -197,17 +204,27 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   const pathname = usePathname();
-  const isLegalRoute =
-    pathname === "/privacy" || pathname === "/terms" || pathname === "/legal";
+  const router = useRouter();
+  const suppressAutoOnboarding =
+    pathname === "/privacy" ||
+    pathname === "/terms" ||
+    pathname === "/legal" ||
+    pathname === "/study";
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [forceOnboardingOpen, setForceOnboardingOpen] = useState(false);
+  const [isCommandOpen, setIsCommandOpen] = useState(false);
+  const [commandInitialTab, setCommandInitialTab] = useState<
+    "commands" | "shortcuts"
+  >("commands");
   const [toast, setToast] = useState<ToastMessage | null>(null);
+  const gChordTimerRef = useRef<number | undefined>(undefined);
+  const pendingGChordRef = useRef(false);
 
   const isOnboardingOpen =
-    (!hasSeenOnboarding && !isLegalRoute) || forceOnboardingOpen;
+    (!hasSeenOnboarding && !suppressAutoOnboarding) || forceOnboardingOpen;
 
   useEffect(() => {
     void ensureInitialSeed();
@@ -223,7 +240,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (hasSeenOnboarding || isLegalRoute) return;
+    if (hasSeenOnboarding || suppressAutoOnboarding) return;
     const handleUnload = () => {
       markOnboardingDone();
     };
@@ -233,7 +250,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       window.removeEventListener("pagehide", handleUnload);
       window.removeEventListener("beforeunload", handleUnload);
     };
-  }, [hasSeenOnboarding, isLegalRoute]);
+  }, [hasSeenOnboarding, suppressAutoOnboarding]);
 
   useEffect(() => {
     if (!toast) return;
@@ -265,6 +282,118 @@ export function Providers({ children }: { children: React.ReactNode }) {
     setForceOnboardingOpen(false);
   }, []);
 
+  const openCommandPalette = useCallback(
+    (tab: "commands" | "shortcuts" = "commands") => {
+      setCommandInitialTab(tab);
+      setIsCommandOpen(true);
+    },
+    []
+  );
+
+  const closeCommandPalette = useCallback(() => {
+    setIsCommandOpen(false);
+  }, []);
+
+  useEffect(() => {
+    const anyBlockingModal =
+      isProfileOpen || isSettingsOpen || isShareOpen || isOnboardingOpen;
+
+    const resetGChord = () => {
+      pendingGChordRef.current = false;
+      window.clearTimeout(gChordTimerRef.current);
+    };
+
+    const handleGlobalShortcuts = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        if (anyBlockingModal) return;
+        event.preventDefault();
+        resetGChord();
+        if (isCommandOpen) {
+          setIsCommandOpen(false);
+        } else {
+          openCommandPalette("commands");
+        }
+        return;
+      }
+
+      if (anyBlockingModal || isCommandOpen) {
+        return;
+      }
+
+      const target = event.target as HTMLElement | null;
+      if (target) {
+        const tag = target.tagName;
+        if (
+          tag === "INPUT" ||
+          tag === "TEXTAREA" ||
+          tag === "SELECT" ||
+          target.isContentEditable
+        ) {
+          return;
+        }
+      }
+
+      if (event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
+
+      if (event.key === "?") {
+        event.preventDefault();
+        resetGChord();
+        openCommandPalette("shortcuts");
+        return;
+      }
+
+      if (pendingGChordRef.current) {
+        const lower = event.key.toLowerCase();
+        resetGChord();
+        if (lower === "l") {
+          event.preventDefault();
+          router.push("/");
+          return;
+        }
+        if (lower === "v") {
+          event.preventDefault();
+          router.push("/vault");
+          return;
+        }
+        if (lower === "s") {
+          event.preventDefault();
+          router.push("/study");
+          return;
+        }
+      }
+
+      if (event.key === "g") {
+        pendingGChordRef.current = true;
+        window.clearTimeout(gChordTimerRef.current);
+        gChordTimerRef.current = window.setTimeout(() => {
+          pendingGChordRef.current = false;
+        }, 700);
+        return;
+      }
+
+      if (event.key === "t" || event.key === "T") {
+        event.preventDefault();
+        openCommandPalette("commands");
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalShortcuts);
+    return () => {
+      window.removeEventListener("keydown", handleGlobalShortcuts);
+      window.clearTimeout(gChordTimerRef.current);
+    };
+  }, [
+    isProfileOpen,
+    isSettingsOpen,
+    isShareOpen,
+    isOnboardingOpen,
+    isCommandOpen,
+    openCommandPalette,
+    router,
+  ]);
+
   const showToast = useCallback(
     (
       message: string,
@@ -292,6 +421,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
       isOnboardingOpen,
       openOnboarding,
       closeOnboarding,
+      isCommandOpen,
+      commandInitialTab,
+      openCommandPalette,
+      closeCommandPalette,
       showToast,
     }),
     [
@@ -306,6 +439,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
       isOnboardingOpen,
       openOnboarding,
       closeOnboarding,
+      isCommandOpen,
+      commandInitialTab,
+      openCommandPalette,
+      closeCommandPalette,
       showToast,
     ]
   );
@@ -314,11 +451,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <AppUIContext.Provider value={value}>
         <VaultProvider>
+          <PwaManager />
           {children}
           <ProfileModal />
           <SettingsDrawer />
           <ShareModal />
           <OnboardingDemo />
+          <CommandPalette />
           {toast ? (
             <div
               role="status"
