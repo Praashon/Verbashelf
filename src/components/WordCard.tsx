@@ -5,19 +5,29 @@ import {
   BookmarkCheck,
   Calendar,
   Check,
+  CheckSquare,
   ChevronDown,
   ExternalLink,
   FolderInput,
   FolderOpen,
   GripVertical,
   History,
+  Mic,
+  NotebookPen,
+  Pencil,
+  Sparkles,
+  Square,
+  StickyNote,
   Trash2,
   Volume2,
 } from "lucide-react";
 import { formatReadableDate, type TopicRecord } from "@/lib/db";
 import type { ReshapedWordView } from "@/lib/dictionary";
+import { speakWord, stopPronunciation } from "@/lib/pronunciation";
 import { cn } from "@/lib/utils";
+import { PronunciationPractice } from "@/components/PronunciationPractice";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface MoveTopicMenuProps {
   wordLabel: string;
@@ -138,6 +148,19 @@ interface WordCardProps {
   wasExisting?: boolean;
   faded?: boolean;
   animateDrop?: boolean;
+  note?: string;
+  customExample?: string;
+  dueBadge?: string;
+  isDue?: boolean;
+  onSaveNotes?: (patch: {
+    note: string;
+    customExample: string;
+  }) => Promise<void> | void;
+  selectable?: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
+  wordDomId?: number;
+  isFocused?: boolean;
   onWordClick?: (word: string) => void;
   onDelete?: () => void;
   topics?: TopicRecord[];
@@ -157,6 +180,16 @@ export function WordCard({
   wasExisting = false,
   faded = false,
   animateDrop = false,
+  note,
+  customExample,
+  dueBadge,
+  isDue = false,
+  onSaveNotes,
+  selectable = false,
+  selected = false,
+  onToggleSelect,
+  wordDomId,
+  isFocused = false,
   onWordClick,
   onDelete,
   topics,
@@ -168,38 +201,101 @@ export function WordCard({
   onDragEnd,
 }: WordCardProps) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPracticeOpen, setIsPracticeOpen] = useState(false);
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [draftNote, setDraftNote] = useState("");
+  const [draftExample, setDraftExample] = useState("");
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
+
+  const mountedRef = useRef(true);
 
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
-      audioRef.current?.pause();
-      audioRef.current = null;
+      mountedRef.current = false;
+      stopPronunciation();
     };
   }, []);
 
   const handlePlayAudio = () => {
-    if (!view.audioUrl) return;
-    if (audioRef.current) {
-      audioRef.current.pause();
+    if (isPlaying) {
+      stopPronunciation();
+      setIsPlaying(false);
+      return;
     }
-    const audio = new Audio(view.audioUrl);
-    audioRef.current = audio;
-    setIsPlaying(true);
-    audio.onended = () => setIsPlaying(false);
-    audio.onerror = () => setIsPlaying(false);
-    void audio.play().catch(() => setIsPlaying(false));
+
+    void speakWord({
+      word: view.word,
+      audioUrl: view.audioUrl,
+      onStart: () => {
+        if (mountedRef.current) {
+          setIsPlaying(true);
+        }
+      },
+      onEnd: () => {
+        if (mountedRef.current) {
+          setIsPlaying(false);
+        }
+      },
+    });
   };
+
+  const openNoteEditor = () => {
+    setDraftNote(note ?? "");
+    setDraftExample(customExample ?? "");
+    setIsEditingNotes(true);
+  };
+
+  const handleSaveNotes = async () => {
+    if (!onSaveNotes) return;
+    setIsSavingNotes(true);
+    try {
+      await onSaveNotes({
+        note: draftNote.trim(),
+        customExample: draftExample.trim(),
+      });
+      if (mountedRef.current) {
+        setIsEditingNotes(false);
+      }
+    } finally {
+      if (mountedRef.current) {
+        setIsSavingNotes(false);
+      }
+    }
+  };
+
+  const handleClearNotes = async () => {
+    if (!onSaveNotes) return;
+    setIsSavingNotes(true);
+    try {
+      await onSaveNotes({ note: "", customExample: "" });
+      if (mountedRef.current) {
+        setDraftNote("");
+        setDraftExample("");
+        setIsEditingNotes(false);
+      }
+    } finally {
+      if (mountedRef.current) {
+        setIsSavingNotes(false);
+      }
+    }
+  };
+
+  const hasSavedNote = Boolean(note?.trim() || customExample?.trim());
 
   return (
     <article
-      draggable={draggable}
+      data-word-id={wordDomId}
+      draggable={draggable && !selectable && !isEditingNotes}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       className={cn(
         "group relative rounded-2xl border p-4 sm:p-6 backdrop-blur-md transition-all duration-300 ease-out",
         animateDrop && "animate-word-drop",
-        draggable && "sm:cursor-grab sm:active:cursor-grabbing",
+        draggable && !selectable && "sm:cursor-grab sm:active:cursor-grabbing",
         isDragging && "opacity-45 scale-[0.98] ring-2 ring-primary/50",
+        selected && "ring-2 ring-primary border-primary/70",
+        isFocused && !selected && "ring-2 ring-primary/65 border-primary/60",
         faded
           ? [
               "verba-card-faded border-border/90 bg-card shadow-xs",
@@ -211,7 +307,28 @@ export function WordCard({
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
-          {draggable ? (
+          {selectable && onToggleSelect ? (
+            <button
+              type="button"
+              onClick={onToggleSelect}
+              aria-pressed={selected}
+              aria-label={
+                selected ? `Deselect ${view.word}` : `Select ${view.word}`
+              }
+              className={cn(
+                "inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border transition-colors sm:h-7 sm:w-7",
+                selected
+                  ? "border-primary bg-primary text-white"
+                  : "border-border bg-card-solid/80 text-muted-foreground hover:border-primary/50 hover:text-primary"
+              )}
+            >
+              {selected ? (
+                <CheckSquare className="h-4 w-4" />
+              ) : (
+                <Square className="h-4 w-4" />
+              )}
+            </button>
+          ) : draggable ? (
             <span
               title="Drag to move to another topic folder"
               aria-hidden="true"
@@ -231,22 +348,41 @@ export function WordCard({
             </span>
           ) : null}
 
-          {view.audioUrl ? (
-            <button
-              type="button"
-              onClick={handlePlayAudio}
-              aria-label={`Play pronunciation for ${view.word}`}
-              title="Listen to pronunciation"
-              className={cn(
-                "inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border transition-all sm:h-8 sm:w-8",
-                isPlaying
-                  ? "border-primary bg-primary text-white scale-105"
-                  : "border-border bg-card-solid/80 text-foreground hover:border-primary hover:text-primary"
-              )}
-            >
-              <Volume2 className="h-4 w-4" />
-            </button>
-          ) : null}
+          <button
+            type="button"
+            onClick={handlePlayAudio}
+            aria-label={
+              isPlaying
+                ? `Stop pronunciation for ${view.word}`
+                : `Play pronunciation for ${view.word}`
+            }
+            title="Listen to pronunciation"
+            className={cn(
+              "inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border transition-all sm:h-8 sm:w-8",
+              isPlaying
+                ? "border-primary bg-primary text-white scale-105"
+                : "border-border bg-card-solid/80 text-foreground hover:border-primary hover:text-primary"
+            )}
+          >
+            <Volume2 className="h-4 w-4" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsPracticeOpen((prev) => !prev)}
+            aria-expanded={isPracticeOpen}
+            aria-label={`Practice pronouncing ${view.word}`}
+            title="Record and compare pronunciation"
+            className={cn(
+              "inline-flex h-8 cursor-pointer items-center gap-1 rounded-full border px-2.5 text-xs font-medium transition-all",
+              isPracticeOpen
+                ? "border-primary bg-primary/12 text-primary"
+                : "border-border bg-card-solid/80 text-muted-foreground hover:border-primary hover:text-primary"
+            )}
+          >
+            <Mic className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Practice</span>
+          </button>
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5">
@@ -254,6 +390,27 @@ export function WordCard({
             <Badge variant="violet" className="transition-all">
               <History className="h-3 w-3" />
               <span>Previously saved on {formatReadableDate(previousDateKey)}</span>
+            </Badge>
+          ) : null}
+
+          {dueBadge ? (
+            <Badge
+              variant={
+                dueBadge === "New"
+                  ? "violet"
+                  : isDue
+                    ? "outline"
+                    : "secondary"
+              }
+              className={cn(
+                isDue &&
+                  dueBadge !== "New" &&
+                  "border-primary/40 bg-primary/10 text-primary",
+                !isDue && "text-muted-foreground"
+              )}
+            >
+              <Sparkles className="h-3 w-3" />
+              <span>{dueBadge}</span>
             </Badge>
           ) : null}
 
@@ -352,6 +509,15 @@ export function WordCard({
         </div>
       </div>
 
+      {isPracticeOpen ? (
+        <PronunciationPractice
+          word={view.word}
+          audioUrl={view.audioUrl}
+          phonetic={view.phonetic}
+          onClose={() => setIsPracticeOpen(false)}
+        />
+      ) : null}
+
       {view.simpleDefinition ? (
         <div
           className={cn(
@@ -442,9 +608,192 @@ export function WordCard({
                 )}
               </div>
             ) : null}
+
+            {meaning.antonyms.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                <span className="text-xs font-medium text-muted-foreground">
+                  Antonyms:
+                </span>
+                {meaning.antonyms.map((ant) =>
+                  onWordClick ? (
+                    <button
+                      key={ant}
+                      type="button"
+                      onClick={() => onWordClick(ant)}
+                      className="cursor-pointer rounded-full border border-rose-500/30 bg-rose-500/10 px-2.5 py-0.5 text-xs font-medium text-rose-700 transition-all hover:bg-rose-500 hover:text-white dark:text-rose-300"
+                    >
+                      {ant}
+                    </button>
+                  ) : (
+                    <span
+                      key={ant}
+                      className="rounded-full border border-rose-500/25 bg-rose-500/8 px-2.5 py-0.5 text-xs text-rose-700 dark:text-rose-300"
+                    >
+                      {ant}
+                    </span>
+                  )
+                )}
+              </div>
+            ) : null}
           </section>
         ))}
       </div>
+
+      {view.relatedWords && view.relatedWords.length > 0 ? (
+        <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-border/50 pt-3">
+          <span className="text-xs font-medium text-muted-foreground">
+            Also see:
+          </span>
+          {view.relatedWords.map((rel) =>
+            onWordClick ? (
+              <button
+                key={rel}
+                type="button"
+                onClick={() => onWordClick(rel)}
+                className="cursor-pointer rounded-full border border-[#63e]/25 bg-[#63e]/10 px-2.5 py-0.5 text-xs font-medium text-[#5227cc] transition-all hover:bg-[#63e] hover:text-white dark:border-violet-400/30 dark:bg-violet-500/15 dark:text-violet-300"
+              >
+                {rel}
+              </button>
+            ) : (
+              <span
+                key={rel}
+                className="rounded-full border border-[#63e]/25 bg-[#63e]/10 px-2.5 py-0.5 text-xs text-[#5227cc] dark:text-violet-300"
+              >
+                {rel}
+              </span>
+            )
+          )}
+        </div>
+      ) : null}
+
+      {onSaveNotes || hasSavedNote ? (
+        <div className="mt-4 border-t border-border/50 pt-3">
+          {isEditingNotes ? (
+            <div className="space-y-2.5 rounded-xl border border-primary/30 bg-background/80 p-3">
+              <div className="flex items-center justify-between">
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                  <NotebookPen className="h-3.5 w-3.5 text-primary" />
+                  <span>Personal Note &amp; Mnemonic</span>
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  Ctrl+Enter to save
+                </span>
+              </div>
+
+              <textarea
+                value={draftNote}
+                onChange={(e) => setDraftNote(e.target.value)}
+                onKeyDown={(e) => {
+                  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                    e.preventDefault();
+                    void handleSaveNotes();
+                  } else if (e.key === "Escape") {
+                    setIsEditingNotes(false);
+                  }
+                }}
+                rows={2}
+                placeholder="Write a memory hook, root word clue, or personal reminder..."
+                aria-label={`Personal note for ${view.word}`}
+                className="w-full rounded-lg border border-border bg-card-solid px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none sm:text-sm"
+              />
+
+              <input
+                type="text"
+                value={draftExample}
+                onChange={(e) => setDraftExample(e.target.value)}
+                onKeyDown={(e) => {
+                  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                    e.preventDefault();
+                    void handleSaveNotes();
+                  } else if (e.key === "Escape") {
+                    setIsEditingNotes(false);
+                  }
+                }}
+                placeholder="Optional: write your own example sentence..."
+                aria-label={`Personal example sentence for ${view.word}`}
+                className="h-9 w-full rounded-lg border border-border bg-card-solid px-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none sm:text-sm"
+              />
+
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  {hasSavedNote ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={isSavingNotes}
+                      onClick={() => void handleClearNotes()}
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <span>Clear Note</span>
+                    </Button>
+                  ) : null}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={isSavingNotes}
+                    onClick={() => setIsEditingNotes(false)}
+                  >
+                    <span>Cancel</span>
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    disabled={isSavingNotes}
+                    onClick={() => void handleSaveNotes()}
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    <span>{isSavingNotes ? "Saving..." : "Save Note"}</span>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : hasSavedNote ? (
+            <div className="rounded-xl border border-amber-500/25 bg-amber-500/8 px-3.5 py-2.5 text-xs">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 space-y-1">
+                  <span className="inline-flex items-center gap-1.5 font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                    <StickyNote className="h-3 w-3" />
+                    <span>My Note &amp; Mnemonic</span>
+                  </span>
+                  {note?.trim() ? (
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                      {note}
+                    </p>
+                  ) : null}
+                  {customExample?.trim() ? (
+                    <p className="border-l-2 border-amber-500/50 pl-2.5 text-xs italic text-muted-foreground sm:text-sm">
+                      My example: &ldquo;{customExample}&rdquo;
+                    </p>
+                  ) : null}
+                </div>
+
+                {onSaveNotes ? (
+                  <button
+                    type="button"
+                    onClick={openNoteEditor}
+                    aria-label={`Edit personal note for ${view.word}`}
+                    className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-border/80 bg-card-solid/90 px-2 py-1 text-[11px] font-medium text-foreground transition-colors hover:border-primary/50 hover:text-primary"
+                  >
+                    <Pencil className="h-3 w-3" />
+                    <span>Edit</span>
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          ) : onSaveNotes ? (
+            <button
+              type="button"
+              onClick={openNoteEditor}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-border px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+            >
+              <NotebookPen className="h-3.5 w-3.5" />
+              <span>Add note / mnemonic</span>
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       {!onDelete ? (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-border/50 pt-3 text-[11px] text-muted-foreground">

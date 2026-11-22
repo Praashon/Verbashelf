@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  GraduationCap,
   HelpCircle,
   Library,
   Moon,
@@ -30,11 +31,12 @@ export function Navbar() {
     setIsShareOpen,
     openOnboarding,
   } = useAppUI();
-  const { words, profile } = useVault();
+  const { words, dueWords, profile } = useVault();
 
   useEffect(() => {
     router.prefetch("/");
     router.prefetch("/vault");
+    router.prefetch("/study");
   }, [router]);
 
   const initials = (profile.displayName || "R")
@@ -86,6 +88,24 @@ export function Navbar() {
               <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-primary">
                 {words.length}
               </span>
+            </Link>
+            <Link
+              href="/study"
+              prefetch={true}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors sm:text-sm",
+                pathname.startsWith("/study")
+                  ? "bg-card-solid text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <GraduationCap className="h-3.5 w-3.5" />
+              <span>Study</span>
+              {dueWords.length > 0 ? (
+                <span className="rounded-full bg-violet-500/15 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-[#5227cc] dark:text-violet-300">
+                  {dueWords.length}
+                </span>
+              ) : null}
             </Link>
           </nav>
         </div>
@@ -173,13 +193,13 @@ export function Navbar() {
       <div className="border-t border-border/50 px-3 py-2 sm:hidden">
         <nav
           aria-label="Mobile navigation"
-          className="grid grid-cols-2 gap-1 rounded-full border border-border/70 bg-muted/70 p-1"
+          className="grid grid-cols-3 gap-1 rounded-full border border-border/70 bg-muted/70 p-1"
         >
           <Link
             href="/"
             prefetch={true}
             className={cn(
-              "inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors",
+              "inline-flex items-center justify-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-semibold transition-colors",
               pathname === "/"
                 ? "bg-card-solid text-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
@@ -192,7 +212,7 @@ export function Navbar() {
             href="/vault"
             prefetch={true}
             className={cn(
-              "inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors",
+              "inline-flex items-center justify-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-semibold transition-colors",
               pathname.startsWith("/vault")
                 ? "bg-card-solid text-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
@@ -203,6 +223,24 @@ export function Navbar() {
             <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-primary">
               {words.length}
             </span>
+          </Link>
+          <Link
+            href="/study"
+            prefetch={true}
+            className={cn(
+              "inline-flex items-center justify-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-semibold transition-colors",
+              pathname.startsWith("/study")
+                ? "bg-card-solid text-foreground shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <GraduationCap className="h-3.5 w-3.5" />
+            <span>Study</span>
+            {dueWords.length > 0 ? (
+              <span className="rounded-full bg-violet-500/15 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-[#5227cc] dark:text-violet-300">
+                {dueWords.length}
+              </span>
+            ) : null}
           </Link>
         </nav>
       </div>
