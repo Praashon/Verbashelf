@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   AlertCircle,
   ArrowRight,
   BookOpenCheck,
+  GraduationCap,
   RotateCcw,
 } from "lucide-react";
 import { useAppUI } from "@/app/Providers";
@@ -19,6 +21,7 @@ import {
   type DisplayMode,
   type NormalizedDictionaryEntry,
 } from "@/lib/dictionary";
+import { formatDueBadge, isWordDue } from "@/lib/srs";
 import { LookupBar } from "@/components/LookupBar";
 import { TopicSelector } from "@/components/TopicSelector";
 import { PreferenceBar } from "@/components/PreferenceBar";
@@ -32,6 +35,7 @@ interface LookupTrigger {
 
 interface SessionCardItem {
   id: string;
+  wordId: number;
   entry: NormalizedDictionaryEntry;
   topicName: string;
   dateKey: string;
@@ -48,6 +52,9 @@ const SAMPLE_WORDS = [
 ];
 
 export function HomeClient() {
+  const searchParams = useSearchParams();
+  const queryParam = searchParams.get("q");
+
   const {
     storedTopicId,
     setActiveTopicId,
@@ -55,16 +62,20 @@ export function HomeClient() {
     isSettingsOpen,
     isShareOpen,
     isOnboardingOpen,
+    isCommandOpen,
   } = useAppUI();
 
   const {
     topics,
     words,
+    dueWords,
+    reviewNow,
     profile,
     topicMap,
     topicNameById,
     upsertWord,
     createTopic,
+    updateWordNotes,
     updateProfile,
   } = useVault();
 
@@ -79,6 +90,7 @@ export function HomeClient() {
   const debounceTimerRef = useRef<number | undefined>(undefined);
   const autoClearTimerRef = useRef<number | undefined>(undefined);
   const lastSavedGuardRef = useRef<string | null>(null);
+  const lastHandledQueryRef = useRef<string | null>(null);
   const inputValueRef = useRef(inputValue);
   const autoClearRef = useRef(profile.autoClearSearch);
 
@@ -145,6 +157,7 @@ export function HomeClient() {
       setSessionCards((prev) => {
         const nextCard: SessionCardItem = {
           id: `${lookupTrigger.seq}-${data.raw.word}`,
+          wordId: saveResult.wordId,
           entry: data.raw,
           topicName: resolvedTopicName,
           dateKey: todayKey,
@@ -232,13 +245,45 @@ export function HomeClient() {
     lastSavedGuardRef.current = null;
   };
 
+  const submitRef = useRef(handleImmediateSubmit);
+  useEffect(() => {
+    submitRef.current = handleImmediateSubmit;
+  });
+
+  useEffect(() => {
+    if (!queryParam) return;
+    const normalized = normalizeTerm(queryParam);
+    if (normalized.length < 2 || lastHandledQueryRef.current === normalized) {
+      return;
+    }
+    lastHandledQueryRef.current = normalized;
+    const timer = window.setTimeout(() => {
+      submitRef.current(normalized);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [queryParam]);
+
   const recentVaultFallback = useMemo(
     () => words.slice(0, 3),
     [words]
   );
 
+  const wordById = useMemo(() => {
+    const map = new Map<number, (typeof words)[number]>();
+    for (const w of words) {
+      if (w.id !== undefined) {
+        map.set(w.id, w);
+      }
+    }
+    return map;
+  }, [words]);
+
   const modalOpen =
-    isProfileOpen || isSettingsOpen || isShareOpen || isOnboardingOpen;
+    isProfileOpen ||
+    isSettingsOpen ||
+    isShareOpen ||
+    isOnboardingOpen ||
+    isCommandOpen;
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col items-center px-3.5 pb-16 pt-6 sm:px-6 sm:pb-20 sm:pt-14">
@@ -293,6 +338,23 @@ export function HomeClient() {
           }
         />
       </div>
+
+      {dueWords.length > 0 ? (
+        <div className="mt-3 flex justify-center">
+          <Link
+            href="/study?mode=srs"
+            prefetch={true}
+            className="inline-flex items-center gap-2 rounded-full border border-primary/35 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary shadow-xs backdrop-blur-md transition-all hover:-translate-y-0.5 hover:bg-primary hover:text-white"
+          >
+            <GraduationCap className="h-3.5 w-3.5" />
+            <span>
+              Review {dueWords.length} due{" "}
+              {dueWords.length === 1 ? "word" : "words"}
+            </span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+      ) : null}
 
       {lookupQuery.isError && lookupTrigger ? (
         <div
@@ -389,6 +451,7 @@ export function HomeClient() {
             );
             const isFaded =
               idx > 0 || (autoClearSearch && inputValue.trim() === "");
+            const liveRecord = wordById.get(item.wordId);
 
             return (
               <WordCard
@@ -398,6 +461,19 @@ export function HomeClient() {
                 dateKey={item.dateKey}
                 previousDateKey={item.previousDateKey}
                 wasExisting={item.wasExisting}
+                note={liveRecord?.note}
+                customExample={liveRecord?.customExample}
+                dueBadge={
+                  liveRecord && reviewNow > 0
+                    ? formatDueBadge(liveRecord, reviewNow)
+                    : undefined
+                }
+                isDue={
+                  liveRecord && reviewNow > 0
+                    ? isWordDue(liveRecord, reviewNow)
+                    : false
+                }
+                onSaveNotes={(patch) => updateWordNotes(item.wordId, patch)}
                 faded={isFaded}
                 animateDrop={idx === 0}
                 onWordClick={handleImmediateSubmit}
@@ -466,6 +542,17 @@ export function HomeClient() {
                   )}
                   topicName={topicNameById.get(word.topicId) ?? "General"}
                   dateKey={word.dateKey}
+                  note={word.note}
+                  customExample={word.customExample}
+                  dueBadge={
+                    reviewNow > 0 ? formatDueBadge(word, reviewNow) : undefined
+                  }
+                  isDue={reviewNow > 0 ? isWordDue(word, reviewNow) : false}
+                  onSaveNotes={
+                    word.id !== undefined
+                      ? (patch) => updateWordNotes(word.id!, patch)
+                      : undefined
+                  }
                   faded
                   onWordClick={handleImmediateSubmit}
                 />

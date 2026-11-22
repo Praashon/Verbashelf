@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
+  CheckCircle2,
   ChevronRight,
   Download,
   FileText,
@@ -12,20 +13,29 @@ import {
   Play,
   Scale,
   ShieldCheck,
+  Smartphone,
   Sun,
   Trash2,
   Upload,
+  WifiOff,
   X,
 } from "lucide-react";
 import { useAppUI } from "@/app/Providers";
 import { useVault } from "@/hooks/useVault";
 import { formatShortcutKeyLabel, type TypingSpeed } from "@/lib/db";
 import { LEGAL_OPERATOR } from "@/lib/legal";
+import { triggerPwaInstall, usePwaStatus } from "@/lib/pwa";
 import {
   exportVaultBackup,
   importVaultBackup,
   wipeVaultData,
 } from "@/lib/backup";
+import {
+  exportWordsAsAnkiTxt,
+  exportWordsAsCsv,
+  importWordListRows,
+  parseWordListFile,
+} from "@/lib/portability";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -36,21 +46,31 @@ export function SettingsDrawer() {
     setTheme,
     isSettingsOpen,
     setIsSettingsOpen,
+    storedTopicId,
     setActiveTopicId,
     openOnboarding,
+    openCommandPalette,
     showToast,
   } = useAppUI();
-  const { profile, updateProfile, topics, words } = useVault();
+  const { profile, updateProfile, topics, words, topicNameById } = useVault();
+  const pwa = usePwaStatus();
 
   const [importMode, setImportMode] = useState<"merge" | "replace">("merge");
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
+  const [fetchOnListImport, setFetchOnListImport] = useState(true);
+  const [listImportProgress, setListImportProgress] = useState<string | null>(
+    null
+  );
+  const [listImportStatus, setListImportStatus] = useState<string | null>(null);
+  const [listImportError, setListImportError] = useState<string | null>(null);
   const [wipeConfirmText, setWipeConfirmText] = useState("");
   const [isBusy, setIsBusy] = useState(false);
   const [isCapturingKey, setIsCapturingKey] = useState(false);
   const [shortcutError, setShortcutError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const listFileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!isCapturingKey || !isSettingsOpen) return;
@@ -132,6 +152,75 @@ export function SettingsDrawer() {
       showToast(message, "error");
     } finally {
       event.target.value = "";
+      setIsBusy(false);
+    }
+  };
+
+  const handleExportAnki = () => {
+    if (words.length === 0) {
+      showToast("Save at least one word before exporting.", "info");
+      return;
+    }
+    const filename = exportWordsAsAnkiTxt(words, topicNameById);
+    showToast(`Exported ${filename}`, "success");
+  };
+
+  const handleExportCsv = () => {
+    if (words.length === 0) {
+      showToast("Save at least one word before exporting.", "info");
+      return;
+    }
+    const filename = exportWordsAsCsv(words, topicNameById);
+    showToast(`Exported ${filename}`, "success");
+  };
+
+  const handleImportWordListFile = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setListImportError(null);
+    setListImportStatus(null);
+    setListImportProgress(null);
+    setIsBusy(true);
+
+    try {
+      const text = await file.text();
+      const rows = parseWordListFile(text, file.name);
+      if (rows.length === 0) {
+        throw new Error(
+          "No valid words found. Provide one word per line or a CSV/TSV with a word column."
+        );
+      }
+
+      const defaultTopicId =
+        (storedTopicId !== null && topics.some((t) => t.id === storedTopicId)
+          ? storedTopicId
+          : topics[0]?.id) ?? 1;
+
+      const result = await importWordListRows({
+        rows,
+        defaultTopicId,
+        fetchDefinitions: fetchOnListImport,
+        onProgress: (done, total, currentWord) => {
+          setListImportProgress(
+            `Importing ${done}/${total}: ${currentWord}...`
+          );
+        },
+      });
+
+      const summary = `Added ${result.added} words (${result.enriched} enriched online, ${result.topicsCreated} topics created, ${result.skipped} skipped).`;
+      setListImportStatus(summary);
+      showToast(summary, "success");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to import word list.";
+      setListImportError(message);
+      showToast(message, "error");
+    } finally {
+      event.target.value = "";
+      setListImportProgress(null);
       setIsBusy(false);
     }
   };
@@ -349,6 +438,28 @@ export function SettingsDrawer() {
               />
             </div>
 
+            <div className="flex items-center justify-between gap-3 border-t border-border/60 pt-3">
+              <label
+                htmlFor="settings-show-stats"
+                className="flex-1 cursor-pointer"
+              >
+                <p className="text-sm font-medium text-foreground">
+                  Show Learning Stats
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Display local daily review count, streak, and mastery strip in Vault &amp; Study
+                </p>
+              </label>
+              <Switch
+                id="settings-show-stats"
+                checked={profile.showStats}
+                onCheckedChange={(checked) => {
+                  void updateProfile({ showStats: checked });
+                }}
+                aria-label="Show local learning stats strip"
+              />
+            </div>
+
             <div className="space-y-2 border-t border-border/60 pt-3">
               <div>
                 <p className="text-sm font-medium text-foreground">
@@ -466,35 +577,103 @@ export function SettingsDrawer() {
             </div>
           </section>
 
-          <section className="flex items-center justify-between gap-3 rounded-2xl border border-border p-4">
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">
-                Interactive Live Guide
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                Replay the hands-on walkthrough anytime.
-              </p>
+          <section className="space-y-3 rounded-2xl border border-border p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">
+                  Guide &amp; Shortcuts
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Replay the demo or view keyboard shortcuts.
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setIsSettingsOpen(false);
+                    openCommandPalette("shortcuts");
+                  }}
+                >
+                  <Keyboard className="h-3.5 w-3.5 text-primary" />
+                  <span>?</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setIsSettingsOpen(false);
+                    openOnboarding();
+                  }}
+                >
+                  <Play className="h-3.5 w-3.5 text-primary" />
+                  <span>Demo</span>
+                </Button>
+              </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setIsSettingsOpen(false);
-                openOnboarding();
-              }}
-            >
-              <Play className="h-3.5 w-3.5 text-primary" />
-              <span>Launch Demo</span>
-            </Button>
+          </section>
+
+          <section className="space-y-3 rounded-2xl border border-border p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                  <Smartphone className="h-4 w-4 text-primary" />
+                  <span>App Install &amp; Offline (PWA)</span>
+                </h3>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Saved Vault words, smart review sessions, pronunciation speech,
+                  and cached Whisper AI work without internet.
+                </p>
+              </div>
+              {!pwa.isOnline ? (
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:text-amber-300">
+                  <WifiOff className="h-3 w-3" />
+                  <span>Offline</span>
+                </span>
+              ) : null}
+            </div>
+
+            {pwa.isStandalone ? (
+              <div className="flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
+                <span>Installed as a standalone offline-ready app</span>
+              </div>
+            ) : pwa.canInstall ? (
+              <Button
+                variant="primary"
+                className="w-full justify-center"
+                onClick={() => {
+                  void triggerPwaInstall().then((outcome) => {
+                    if (outcome === "accepted") {
+                      showToast("VerbaShelf installed on your device.", "success");
+                    }
+                  });
+                }}
+              >
+                <Download className="h-4 w-4" />
+                <span>Install VerbaShelf App</span>
+              </Button>
+            ) : pwa.isIos ? (
+              <p className="rounded-xl border border-border/70 bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+                On iPhone or iPad, tap Safari&apos;s <strong className="text-foreground">Share</strong> button and choose{" "}
+                <strong className="text-foreground">Add to Home Screen</strong>.
+              </p>
+            ) : (
+              <p className="rounded-xl border border-border/70 bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+                Install anytime from your browser&apos;s address bar or menu to run
+                VerbaShelf in its own app window.
+              </p>
+            )}
           </section>
 
           <section className="space-y-3 rounded-2xl border border-border p-4">
             <div>
               <h3 className="text-sm font-semibold text-foreground">
-                Backup & Restore
+                Import &amp; Export
               </h3>
               <p className="text-xs text-muted-foreground">
-                Portable JSON backup validated with Zod.
+                Export JSON backups, Anki decks, or CSV spreadsheets, and import word lists.
               </p>
             </div>
 
@@ -505,12 +684,35 @@ export function SettingsDrawer() {
               disabled={isBusy}
             >
               <Download className="h-4 w-4" />
-              <span>Export Vault (.json)</span>
+              <span>Export Full Backup (.json)</span>
             </Button>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="justify-center"
+                onClick={handleExportAnki}
+                disabled={isBusy || words.length === 0}
+              >
+                <Download className="h-3.5 w-3.5 text-primary" />
+                <span>Export Anki (.txt)</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="justify-center"
+                onClick={handleExportCsv}
+                disabled={isBusy || words.length === 0}
+              >
+                <Download className="h-3.5 w-3.5 text-primary" />
+                <span>Export CSV (.csv)</span>
+              </Button>
+            </div>
 
             <div className="space-y-2 border-t border-border/60 pt-3">
               <div className="flex flex-col items-stretch gap-2 text-xs sm:flex-row sm:items-center sm:justify-between">
-                <span className="font-medium text-foreground">Import Mode</span>
+                <span className="font-medium text-foreground">JSON Backup Import</span>
                 <div className="grid grid-cols-2 rounded-lg border border-border bg-muted/60 p-0.5 sm:inline-flex">
                   <button
                     type="button"
@@ -569,6 +771,60 @@ export function SettingsDrawer() {
                   className="rounded-lg bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive"
                 >
                   {importError}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="space-y-2 border-t border-border/60 pt-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-medium text-foreground">
+                  Import Word List (.txt / .csv)
+                </span>
+              </div>
+
+              <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={fetchOnListImport}
+                  onChange={(e) => setFetchOnListImport(e.target.checked)}
+                  className="h-3.5 w-3.5 accent-primary"
+                />
+                <span>Auto-fetch definitions for plain word lists</span>
+              </label>
+
+              <input
+                ref={listFileInputRef}
+                type="file"
+                accept=".txt,.csv,.tsv,text/plain,text/csv"
+                onChange={handleImportWordListFile}
+                className="hidden"
+              />
+              <Button
+                variant="outline"
+                className="w-full justify-center"
+                onClick={() => listFileInputRef.current?.click()}
+                disabled={isBusy}
+              >
+                <Upload className="h-4 w-4 text-primary" />
+                <span>Import Word List (.txt / .csv / .tsv)</span>
+              </Button>
+
+              {listImportProgress ? (
+                <p className="rounded-lg bg-primary/10 px-3 py-2 text-xs font-medium text-primary">
+                  {listImportProgress}
+                </p>
+              ) : null}
+              {listImportStatus ? (
+                <p className="rounded-lg bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                  {listImportStatus}
+                </p>
+              ) : null}
+              {listImportError ? (
+                <p
+                  role="alert"
+                  className="rounded-lg bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive"
+                >
+                  {listImportError}
                 </p>
               ) : null}
             </div>
